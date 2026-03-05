@@ -2,1262 +2,1273 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UAV Airborne Relay — BLOS C2 Simulator</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-    :root {
-      --bg: #1a1d23;
-      --panel: #21252d;
-      --border: #2e3340;
-      --border2: #3a3f4e;
-      --text: #c8cdd8;
-      --text-dim: #6b7280;
-      --text-head: #e2e5ec;
-      --green: #4caf6e;
-      --yellow: #d4a017;
-      --red: #c0392b;
-      --blue: #4a7fa5;
-      --orange: #c07030;
-      --white: #e8ebf0;
-      --relay-col: #5b9bd5;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      min-height: 100vh;
-    }
-
-    #app {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-    }
-
-    .app-header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 9px;
-      display: flex;
-      align-items: baseline;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .app-header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-head);
-      letter-spacing: .3px;
-    }
-
-    .app-header span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: .5px;
-    }
-
-    .main-layout {
-      display: grid;
-      grid-template-columns: 1fr 265px;
-      gap: 11px;
-    }
-
-    .canvas-panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #sim {
-      display: block;
-      width: 100%;
-      height: 370px;
-    }
-
-    .canvas-panel canvas {
-      flex: 1;
-    }
-
-    .right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .panel-header {
-      background: #1e2229;
-      border-bottom: 1px solid var(--border);
-      padding: 5px 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .panel-body {
-      padding: 9px;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 3px 0;
-      border-bottom: 1px solid var(--border);
-      gap: 8px;
-    }
-
-    .status-row:last-child {
-      border-bottom: none;
-    }
-
-    .status-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: .5px;
-      white-space: nowrap;
-    }
-
-    .status-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-head);
-      text-align: right;
-    }
-
-    .status-val.green {
-      color: var(--green);
-    }
-
-    .status-val.yellow {
-      color: var(--yellow);
-    }
-
-    .status-val.red {
-      color: var(--red);
-    }
-
-    .status-val.blue {
-      color: var(--blue);
-    }
-
-    .status-val.dim {
-      color: var(--text-dim);
-    }
-
-    .sig-bars {
-      display: flex;
-      gap: 2px;
-      align-items: flex-end;
-      height: 14px;
-    }
-
-    .sig-bar {
-      width: 5px;
-      border-radius: 1px;
-      background: var(--border2);
-      transition: background .35s;
-    }
-
-    .sig-bar.b1 {
-      height: 4px;
-    }
-
-    .sig-bar.b2 {
-      height: 7px;
-    }
-
-    .sig-bar.b3 {
-      height: 10px;
-    }
-
-    .sig-bar.b4 {
-      height: 14px;
-    }
-
-    .sig-bar.lit-green {
-      background: var(--green);
-    }
-
-    .sig-bar.lit-yellow {
-      background: var(--yellow);
-    }
-
-    .sig-bar.lit-red {
-      background: var(--red);
-    }
-
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 7px 10px;
-      margin-bottom: 5px;
-      background: #272b34;
-      border: 1px solid var(--border2);
-      border-radius: 3px;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      text-align: left;
-      transition: background .15s, border-color .15s;
-      letter-spacing: .2px;
-    }
-
-    .btn:last-child {
-      margin-bottom: 0;
-    }
-
-    .btn:hover:not(:disabled) {
-      background: #2e3340;
-      border-color: #4a5066;
-      color: var(--white);
-    }
-
-    .btn:disabled {
-      opacity: .32;
-      cursor: not-allowed;
-    }
-
-    .btn.bp {
-      border-color: #3a5a7a;
-      color: #7ab0d0;
-    }
-
-    .btn.bp:hover:not(:disabled) {
-      background: #1e2e3e;
-      border-color: #4a7fa5;
-    }
-
-    .btn.bw {
-      border-color: #6a4010;
-      color: var(--orange);
-    }
-
-    .btn.bw:hover:not(:disabled) {
-      background: #2a1e10;
-      border-color: var(--orange);
-    }
-
-    .btn.bd {
-      border-color: #5a1a1a;
-      color: var(--red);
-    }
-
-    .btn.bd:hover:not(:disabled) {
-      background: #2a1010;
-      border-color: var(--red);
-    }
-
-    .btn.ba {
-      background: #1e2e1e;
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    .btn.brel {
-      border-color: #2a4a6a;
-      color: var(--relay-col);
-    }
-
-    .btn.brel:hover:not(:disabled) {
-      background: #162030;
-      border-color: var(--relay-col);
-    }
-
-    .decision-panel {
-      background: #1a2218;
-      border: 1px solid #2a4a2a;
-      border-radius: 3px;
-      padding: 9px;
-      margin-top: 6px;
-    }
-
-    .decision-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--green);
-      letter-spacing: 1px;
-      margin-bottom: 7px;
-      text-transform: uppercase;
-    }
-
-    .timer-bar-wrap {
-      margin-top: 6px;
-      background: #1e2229;
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 7px 10px;
-    }
-
-    .timer-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .timer-outer {
-      background: rgba(255, 255, 255, .06);
-      border-radius: 2px;
-      height: 8px;
-      overflow: hidden;
-    }
-
-    .timer-inner {
-      height: 100%;
-      border-radius: 2px;
-      transition: width .5s, background .5s;
-    }
-
-    .geo-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 4px;
-      padding: 3px 0;
-      border-bottom: 1px solid var(--border);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .geo-row:last-child {
-      border-bottom: none;
-    }
-
-    .geo-key {
-      font-size: 10px;
-      color: var(--text-dim);
-    }
-
-    .geo-val {
-      font-size: 10px;
-      color: var(--text-head);
-      text-align: right;
-    }
-
-    .geo-val.t {
-      color: var(--red);
-    }
-
-    .geo-val.f {
-      color: var(--green);
-    }
-
-    .log-box {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      max-height: 76px;
-      overflow-y: auto;
-      line-height: 1.6;
-    }
-
-    .log-entry.info {
-      color: #5a8ab0;
-    }
-
-    .log-entry.warn {
-      color: var(--yellow);
-    }
-
-    .log-entry.fail {
-      color: var(--red);
-    }
-
-    .log-entry.ok {
-      color: var(--green);
-    }
-
-    .bottom-strip {
-      display: flex;
-      gap: 10px;
-    }
-
-    .bottom-strip .panel {
-      flex: 1;
-    }
-
-    .phase-badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 2px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: .5px;
-      background: #2a2e38;
-      border: 1px solid var(--border2);
-      color: var(--text-dim);
-    }
-
-    .phase-badge.active {
-      background: #1a2e1a;
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    .phase-badge.warn {
-      background: #2a2010;
-      border-color: var(--yellow);
-      color: var(--yellow);
-    }
-
-    .phase-badge.fail {
-      background: #2a1010;
-      border-color: var(--red);
-      color: var(--red);
-    }
-
-    .rec-msg {
-      font-size: 11px;
-      color: var(--yellow);
-      margin-top: 5px;
-      font-family: 'JetBrains Mono', monospace;
-      line-height: 1.5;
-      display: none;
-    }
-
-    footer {
-      text-align: center;
-      padding: 7px 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-      border-top: 1px solid var(--border);
-      letter-spacing: 1px;
-    }
-
-    @media(max-width:700px) {
-      .main-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAV Airborne Relay Simulation — BLOS Relay Architecture</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg: #1a1d23;
+            --panel: #21252d;
+            --border: #2e3340;
+            --border2: #3a3f4e;
+            --text: #c8cdd8;
+            --text-dim: #6b7280;
+            --text-head: #e2e5ec;
+            --green: #4caf6e;
+            --yellow: #d4a017;
+            --red: #c0392b;
+            --blue: #4a7fa5;
+            --orange: #c07030;
+            --white: #e8ebf0;
+            --relay-col: #5b9bd5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            min-height: 100vh;
+        }
+
+        #app {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+            height: 100vh;
+        }
+
+        .app-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 9px;
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .app-header h1 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-head);
+            letter-spacing: .3px;
+        }
+
+        .app-header span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: .5px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 265px;
+            gap: 11px;
+            flex: 1;
+            height: 100%;
+            align-items: stretch;
+        }
+
+        .canvas-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            position: relative;
+            display: flex;
+        }
+
+        #sim {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .canvas-panel canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #1e2229;
+            border-bottom: 1px solid var(--border);
+            padding: 5px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .panel-body {
+            padding: 9px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border);
+            gap: 8px;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .5px;
+            white-space: nowrap;
+        }
+
+        .status-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-head);
+            text-align: right;
+        }
+
+        .status-val.green {
+            color: var(--green);
+        }
+
+        .status-val.yellow {
+            color: var(--yellow);
+        }
+
+        .status-val.red {
+            color: var(--red);
+        }
+
+        .status-val.blue {
+            color: var(--blue);
+        }
+
+        .status-val.dim {
+            color: var(--text-dim);
+        }
+
+        .sig-bars {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 14px;
+        }
+
+        .sig-bar {
+            width: 5px;
+            border-radius: 1px;
+            background: var(--border2);
+            transition: background .35s;
+        }
+
+        .sig-bar.b1 {
+            height: 4px;
+        }
+
+        .sig-bar.b2 {
+            height: 7px;
+        }
+
+        .sig-bar.b3 {
+            height: 10px;
+        }
+
+        .sig-bar.b4 {
+            height: 14px;
+        }
+
+        .sig-bar.lit-green {
+            background: var(--green);
+        }
+
+        .sig-bar.lit-yellow {
+            background: var(--yellow);
+        }
+
+        .sig-bar.lit-red {
+            background: var(--red);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 7px 10px;
+            margin-bottom: 5px;
+            background: #272b34;
+            border: 1px solid var(--border2);
+            border-radius: 3px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: background .15s, border-color .15s;
+            letter-spacing: .2px;
+        }
+
+        .btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #2e3340;
+            border-color: #4a5066;
+            color: var(--white);
+        }
+
+        .btn:disabled {
+            opacity: .32;
+            cursor: not-allowed;
+        }
+
+        .btn.bp {
+            border-color: #3a5a7a;
+            color: #7ab0d0;
+        }
+
+        .btn.bp:hover:not(:disabled) {
+            background: #1e2e3e;
+            border-color: #4a7fa5;
+        }
+
+        .btn.bw {
+            border-color: #6a4010;
+            color: var(--orange);
+        }
+
+        .btn.bw:hover:not(:disabled) {
+            background: #2a1e10;
+            border-color: var(--orange);
+        }
+
+        .btn.bd {
+            border-color: #5a1a1a;
+            color: var(--red);
+        }
+
+        .btn.bd:hover:not(:disabled) {
+            background: #2a1010;
+            border-color: var(--red);
+        }
+
+        .btn.ba {
+            background: #1e2e1e;
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .btn.brel {
+            border-color: #2a4a6a;
+            color: var(--relay-col);
+        }
+
+        .btn.brel:hover:not(:disabled) {
+            background: #162030;
+            border-color: var(--relay-col);
+        }
+
+        .decision-panel {
+            background: #1a2218;
+            border: 1px solid #2a4a2a;
+            border-radius: 3px;
+            padding: 9px;
+            margin-top: 6px;
+            min-height: 78px;
+        }
+
+        .hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .decision-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--green);
+            letter-spacing: 1px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+        }
+
+        .timer-bar-wrap {
+            margin-top: 6px;
+            background: #1e2229;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 7px 10px;
+        }
+
+        .timer-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .timer-outer {
+            background: rgba(255, 255, 255, .06);
+            border-radius: 2px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .timer-inner {
+            height: 100%;
+            border-radius: 2px;
+            transition: width .5s, background .5s;
+        }
+
+        .geo-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 4px;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .geo-row:last-child {
+            border-bottom: none;
+        }
+
+        .geo-key {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .geo-val {
+            font-size: 10px;
+            color: var(--text-head);
+            text-align: right;
+        }
+
+        .geo-val.t {
+            color: var(--red);
+        }
+
+        .geo-val.f {
+            color: var(--green);
+        }
+
+        .log-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            max-height: 76px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .log-entry.info {
+            color: #5a8ab0;
+        }
+
+        .log-entry.warn {
+            color: var(--yellow);
+        }
+
+        .log-entry.fail {
+            color: var(--red);
+        }
+
+        .log-entry.ok {
+            color: var(--green);
+        }
+
+        .bottom-strip {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .bottom-strip .panel {
+            flex: 1;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 2px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .5px;
+            background: #2a2e38;
+            border: 1px solid var(--border2);
+            color: var(--text-dim);
+        }
+
+        .phase-badge.active {
+            background: #1a2e1a;
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .phase-badge.warn {
+            background: #2a2010;
+            border-color: var(--yellow);
+            color: var(--yellow);
+        }
+
+        .phase-badge.fail {
+            background: #2a1010;
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .rec-msg {
+            font-size: 11px;
+            color: var(--yellow);
+            margin-top: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.5;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 7px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            letter-spacing: 1px;
+        }
+
+        @media(max-width:700px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
-  <div id="app">
-    <div class="app-header">
-      <h1>UAV Airborne Relay — BLOS C2 Simulator</h1>
-      <span>v3.0 // EDUCATIONAL TOOL</span>
-    </div>
+    <div id="app">
+        <div class="app-header">
+            <h1>UAV Airborne Relay Simulation</h1>
 
-    <div class="main-layout">
-      <div class="canvas-panel">
-        <canvas id="sim"></canvas>
-      </div>
-
-      <div class="right-col">
-        <div class="panel">
-          <div class="panel-header">Operator Controls</div>
-          <div class="panel-body">
-            <button class="btn bp" id="btnLM" onclick="cmdLaunchMission()">Launch Mission UAV</button>
-            <button class="btn brel" id="btnLR" onclick="cmdLaunchRelay()">Launch Relay UAV</button>
-            <button class="btn bw" id="btnBT" onclick="cmdBlockTerrain()" disabled>Simulate Terrain Blocking</button>
-            <button class="btn bd" id="btnRF" onclick="cmdRelayFail()" disabled>Simulate Relay Failure</button>
-            <button class="btn" onclick="cmdReset()">Reset Simulation</button>
-            <div class="decision-panel" id="decPanel" style="display:none;">
-              <div class="decision-title">Link Reacquired — Operator Decision</div>
-              <button class="btn ba" onclick="cmdOrbit()">Orbit Within LOS</button>
-              <button class="btn bp" onclick="cmdResume()">Resume Mission</button>
-            </div>
-          </div>
         </div>
-
-        <div class="panel">
-          <div class="panel-header">Link Status</div>
-          <div class="panel-body">
-            <div class="status-row">
-              <span class="status-label">GCS → Relay</span>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div class="sig-bars" id="sigR">
-                  <div class="sig-bar b1"></div>
-                  <div class="sig-bar b2"></div>
-                  <div class="sig-bar b3"></div>
-                  <div class="sig-bar b4"></div>
+        <div class="main-layout">
+            <div class="canvas-panel"><canvas id="sim"></canvas></div>
+            <div class="right-col">
+                <div class="panel">
+                    <div class="panel-header">Remote Pilot Console</div>
+                    <div class="panel-body">
+                        <button class="btn bp" id="btnLM" onclick="cmdLaunchMission()">Launch Mission UAV</button>
+                        <button class="btn brel" id="btnLR" onclick="cmdLaunchRelay()">Launch Relay UAV</button>
+                        <button class="btn bw" id="btnBT" onclick="cmdBlockTerrain()" disabled>Simulate Terrain
+                            Blocking</button>
+                        <button class="btn bd" id="btnRF" onclick="cmdRelayFail()" disabled>Simulate Relay
+                            Failure</button>
+                        <button class="btn" onclick="cmdReset()">Reset Simulation</button>
+                        <div class="decision-panel hidden" id="decPanel">
+                            <div class="decision-title">Link Reacquired &#8212; Operator Decision</div>
+                            <button class="btn ba" onclick="cmdOrbit()">Orbit &amp; Hold Position</button>
+                            <button class="btn bp" onclick="cmdResume()">Resume Mission</button>
+                        </div>
+                    </div>
                 </div>
-                <span class="status-val dim" id="lblRL">--</span>
-              </div>
-            </div>
-            <div class="status-row">
-              <span class="status-label">Relay → Mission</span>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div class="sig-bars" id="sigM">
-                  <div class="sig-bar b1"></div>
-                  <div class="sig-bar b2"></div>
-                  <div class="sig-bar b3"></div>
-                  <div class="sig-bar b4"></div>
+                <div class="panel">
+                    <div class="panel-header">Link Status</div>
+                    <div class="panel-body">
+                        <div class="status-row">
+                            <span class="status-label">GCS &#8594; Relay UAV</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="sig-bars" id="sigR">
+                                    <div class="sig-bar b1"></div>
+                                    <div class="sig-bar b2"></div>
+                                    <div class="sig-bar b3"></div>
+                                    <div class="sig-bar b4"></div>
+                                </div>
+                                <span class="status-val dim" id="lblRL">--</span>
+                            </div>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Relay UAV &#8594; Msn UAV</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="sig-bars" id="sigM">
+                                    <div class="sig-bar b1"></div>
+                                    <div class="sig-bar b2"></div>
+                                    <div class="sig-bar b3"></div>
+                                    <div class="sig-bar b4"></div>
+                                </div>
+                                <span class="status-val dim" id="lblML">--</span>
+                            </div>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Direct GCS &#8594; Msn UAV</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="sig-bars" id="sigD">
+                                    <div class="sig-bar b1"></div>
+                                    <div class="sig-bar b2"></div>
+                                    <div class="sig-bar b3"></div>
+                                    <div class="sig-bar b4"></div>
+                                </div>
+                                <span class="status-val dim" id="lblDL">--</span>
+                            </div>
+                        </div>
+                        <div class="status-row"><span class="status-label">Link Mode</span><span class="status-val dim"
+                                id="lblMode">--</span></div>
+                        <div class="status-row"><span class="status-label">Relay UAV</span><span class="status-val dim"
+                                id="lblRph">GROUND</span></div>
+                        <div class="status-row"><span class="status-label">Mission UAV</span><span
+                                class="status-val dim" id="lblMph">GROUND</span></div>
+                    </div>
                 </div>
-                <span class="status-val dim" id="lblML">--</span>
-              </div>
-            </div>
-            <div class="status-row">
-              <span class="status-label">Direct GCS→Mission</span>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div class="sig-bars" id="sigD">
-                  <div class="sig-bar b1"></div>
-                  <div class="sig-bar b2"></div>
-                  <div class="sig-bar b3"></div>
-                  <div class="sig-bar b4"></div>
+                <div class="timer-bar-wrap hidden" id="timerWrap">
+                    <div class="timer-label"><span>LOST LINK TIMER</span><span id="timerVal">30s</span></div>
+                    <div class="timer-outer">
+                        <div class="timer-inner" id="timerBar" style="width:100%;background:var(--red);"></div>
+                    </div>
                 </div>
-                <span class="status-val dim" id="lblDL">--</span>
-              </div>
+                <div class="panel">
+                    <div class="panel-header">Link Geometry</div>
+                    <div class="panel-body">
+                        <div class="geo-row"><span class="geo-key">Relay UAV Altitude</span><span class="geo-val"
+                                id="gRA">--</span></div>
+                        <div class="geo-row"><span class="geo-key">Mission UAV Altitude</span><span class="geo-val"
+                                id="gMA">--</span></div>
+                        <div class="geo-row"><span class="geo-key">Radio Horizon</span><span class="geo-val"
+                                id="gRH">--</span></div>
+                        <div class="geo-row"><span class="geo-key">GCS &#8594; Relay UAV</span><span class="geo-val"
+                                id="gGR">--</span></div>
+                        <div class="geo-row"><span class="geo-key">Relay UAV &#8594; Msn UAV</span><span class="geo-val"
+                                id="gRM">--</span></div>
+                        <div class="geo-row"><span class="geo-key">Terrain Block</span><span class="geo-val f"
+                                id="gTB">FALSE</span></div>
+                        <div class="geo-row"><span class="geo-key">Link Mode</span><span class="geo-val"
+                                id="gLM">--</span></div>
+                    </div>
+                </div>
             </div>
-            <div class="status-row">
-              <span class="status-label">Link Mode</span>
-              <span class="status-val dim" id="lblMode">--</span>
-            </div>
-            <div class="status-row">
-              <span class="status-label">Relay UAV</span>
-              <span class="status-val dim" id="lblRph">GROUND</span>
-            </div>
-            <div class="status-row">
-              <span class="status-label">Mission UAV</span>
-              <span class="status-val dim" id="lblMph">GROUND</span>
-            </div>
-          </div>
         </div>
-
-        <div class="timer-bar-wrap" id="timerWrap" style="display:none;">
-          <div class="timer-label">
-            <span>LOST LINK TIMER</span>
-            <span id="timerVal">30s</span>
-          </div>
-          <div class="timer-outer">
-            <div class="timer-inner" id="timerBar" style="width:100%;background:var(--red);"></div>
-          </div>
+        <div class="bottom-strip">
+            <div class="panel" style="flex:2;">
+                <div class="panel-header">Phase / Situation</div>
+                <div class="panel-body">
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                        <span class="phase-badge" id="pBadge">STANDBY</span>
+                        <div>
+                            <span style="font-size:12px;color:var(--text);" id="pDesc">System ready. Launch Mission UAV
+                                or Relay UAV to begin.</span>
+                            <div class="rec-msg" id="recMsg"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" style="flex:1.4;">
+                <div class="panel-header">Event Log</div>
+                <div class="panel-body" style="padding:6px 10px;">
+                    <div class="log-box" id="logBox"></div>
+                </div>
+            </div>
         </div>
-
-        <div class="panel">
-          <div class="panel-header">Link Geometry</div>
-          <div class="panel-body">
-            <div class="geo-row"><span class="geo-key">Relay Altitude</span><span class="geo-val" id="gRA">--</span>
-            </div>
-            <div class="geo-row"><span class="geo-key">Mission Altitude</span><span class="geo-val" id="gMA">--</span>
-            </div>
-            <div class="geo-row"><span class="geo-key">Radio Horizon</span><span class="geo-val" id="gRH">--</span>
-            </div>
-            <div class="geo-row"><span class="geo-key">GCS → Relay</span><span class="geo-val" id="gGR">--</span></div>
-            <div class="geo-row"><span class="geo-key">Relay → Mission</span><span class="geo-val" id="gRM">--</span>
-            </div>
-            <div class="geo-row"><span class="geo-key">Terrain Block</span><span class="geo-val f" id="gTB">FALSE</span>
-            </div>
-            <div class="geo-row"><span class="geo-key">Link Mode</span><span class="geo-val" id="gLM">--</span></div>
-          </div>
-        </div>
-      </div>
+        <footer>RALF CHRISTIAN SANOY &#8212; UAS BVLOS PILOT AND MISSION COMMANDER &#8212; 2026</footer>
     </div>
+    <script>
+        const canvas = document.getElementById('sim');
+        const ctx = canvas.getContext('2d');
+        let W, H, frame = 0;
 
-    <div class="bottom-strip">
-      <div class="panel" style="flex:2;">
-        <div class="panel-header">Phase / Situation</div>
-        <div class="panel-body">
-          <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-            <span class="phase-badge" id="pBadge">STANDBY</span>
-            <div>
-              <span style="font-size:12px;color:var(--text);" id="pDesc">System ready. Launch Mission UAV or Relay UAV
-                to begin.</span>
-              <div class="rec-msg" id="recMsg"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="panel" style="flex:1.4;">
-        <div class="panel-header">Event Log</div>
-        <div class="panel-body" style="padding:6px 10px;">
-          <div class="log-box" id="logBox"></div>
-        </div>
-      </div>
-    </div>
+        // original layout constants — relay stays in los zone, msn goes blos
+        const GX = 0.08, GY = 0.72;
+        const RLX = 0.32, RLY = 0.20;
+        const ROR_X = 0.052;
+        const M_ALT = 0.30;
+        const BLOS_X = 0.46;
+        const MIS_X = 0.82;
+        const REACQ_X = 0.38, REACQ_Y = 0.30;
+        const LOS_MAX_R = 0.38;
+        const REL_MAX_R = 0.60;
+        const TIMER_MAX = 5;
 
-    <footer>RALF CHRISTIAN SANOY — UAS BVLOS PILOT AND MISSION COMMANDER — 2026</footer>
-  </div>
+        // scale for nm display — 1 unit = 108 nm (so blos_x ~60nm, mis_x ~200nm)
+        const NM_SCALE = 108;
 
-  <script>
-    const canvas = document.getElementById('sim');
-    const ctx = canvas.getContext('2d');
-    let W, H, frame = 0;
+        let relay = { phase: 'ground', x: GX, y: GY - 0.02, orbit: 0 };
+        let muav = { phase: 'ground', x: GX + 0.01, y: GY - 0.01, orbitA: 0 };
 
-    const GX = 0.08, GY = 0.72;
-    const RLX = 0.32, RLY = 0.20;
-    const ROR_X = 0.052, ROR_Y = 0.030;
-    const M_ALT = 0.30;
-    const BLOS_X = 0.46;
-    const MIS_X = 0.82;
-    const REACQ_X = 0.38, REACQ_Y = 0.30;
-    const LOS_MAX_R = 0.38;
-    const REL_MAX_R = 0.60;
-    const TIMER_MAX = 5;
+        let terrainBlock = false, relayFailed = false;
+        let lostLinkTimer = 0, timerRunning = false, reacquired = false;
+        let rLinkDisp = 0, mLinkDisp = 0, dLinkDisp = 0;
+        let logLines = [], dashOff = 0;
 
-    let relay = { phase: 'ground', x: GX, y: GY - 0.02, orbit: 0 };
-    let muav = { phase: 'ground', x: GX + 0.01, y: GY - 0.01, orbitA: 0 };
-
-    let terrainBlock = false;
-    let relayFailed = false;
-    let lostLinkTimer = 0;
-    let timerRunning = false;
-    let reacquired = false;
-
-    let rLinkDisp = 0, mLinkDisp = 0, dLinkDisp = 0;
-    let logLines = [], dashOff = 0;
-
-    function log(msg, cls = 'info') {
-      const t = String(Math.floor(frame / 60)).padStart(4, '0');
-      logLines.push({ t, msg, cls });
-      if (logLines.length > 50) logLines.shift();
-      const box = document.getElementById('logBox');
-      box.innerHTML = logLines.slice(-8).map(l =>
-        `<div class="log-entry ${l.cls}">[T+${l.t}] ${l.msg}</div>`).join('');
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function resize() {
-      W = canvas.offsetWidth;
-      H = canvas.offsetHeight;
-      canvas.width = W; canvas.height = H;
-    }
-
-    function px(n) { return n * W; } function py(n) { return n * H; }
-
-    function getRelayPos() {
-      if (relay.phase === 'orbiting' || relay.phase === 'failed') {
-        if (relay.phase === 'orbiting')
-          return { x: RLX + ROR_X * Math.cos(relay.orbit), y: RLY + ROR_Y * Math.sin(relay.orbit) };
-      }
-      return { x: relay.x, y: relay.y };
-    }
-
-    function calcRelayLink() {
-      if (relay.phase === 'ground' || relay.phase === 'failed') return 0;
-      const rp = getRelayPos();
-      const d = Math.hypot(rp.x - GX, rp.y - GY);
-      if (d > REL_MAX_R) return 0;
-      if (d < REL_MAX_R * 0.6) return 1;
-      return 1 - (d - REL_MAX_R * 0.6) / (REL_MAX_R * 0.4);
-    }
-
-    function calcMissionViaRelay() {
-
-        if (relay.phase !== 'orbiting' || relayFailed) return 0;
-        if (muav.phase === 'ground' || muav.phase === 'launching') return 0;
-
-        const rp = getRelayPos();
-        const d = Math.hypot(muav.x - rp.x, muav.y - rp.y);
-
-        if (d > REL_MAX_R) return 0;
-        if (d < REL_MAX_R * 0.7) return 1;
-
-        return 1 - (d - REL_MAX_R * 0.7) / (REL_MAX_R * 0.3);
-      }
-
-    function calcDirectLink() {
-        if (muav.phase === 'ground' || muav.phase === 'launching') return 0;
-
-        const d = Math.hypot(muav.x - GX, muav.y - GY);
-
-        if (muav.x < BLOS_X && d < LOS_MAX_R) return 1;
-
-        if (terrainBlock && muav.x >= BLOS_X) return 0;
-
-        if (d > LOS_MAX_R) return 0;
-
-        if (d < LOS_MAX_R * 0.6) return 1;
-
-        return 1 - (d - LOS_MAX_R * 0.6) / (LOS_MAX_R * 0.4);
-      }
-
-    function effectiveLink() {
-      const dl = calcDirectLink();
-      const ml = calcMissionViaRelay();
-      return Math.max(dl, ml);
-    }
-
-    function lerpColor(c1, c2, t) {
-      t = Math.max(0, Math.min(1, t));
-      const parse = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-      const a = parse(c1), b = parse(c2);
-      return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
-    }
-
-    function linkColor(s) {
-      if (s >= 0.65) return '#4caf6e';
-      if (s >= 0.25) return lerpColor('#d4a017', '#4caf6e', (s - 0.25) / 0.40);
-      if (s >= 0.01) return lerpColor('#c0392b', '#d4a017', s / 0.25);
-      return '#c0392b';
-    }
-
-    function drawBg() {
-      const sky = ctx.createLinearGradient(0, 0, 0, H * 0.65);
-      sky.addColorStop(0, '#0d1117'); sky.addColorStop(1, '#151b24');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-    }
-
-    const TPTS = [
-      [0, .82], [.10, .80], [.18, .76], [.24, .67], [.30, .73],
-      [.36, .62], [.43, .57], [.50, .65], [.57, .72], [.63, .67],
-      [.69, .74], [.76, .77], [.85, .79], [1, .82]
-    ];
-
-    function drawTerrain() {
-      ctx.beginPath(); ctx.moveTo(0, H);
-      TPTS.forEach(p => ctx.lineTo(px(p[0]), py(p[1])));
-      ctx.lineTo(W, H); ctx.closePath();
-      const tg = ctx.createLinearGradient(0, H * 0.5, 0, H);
-      tg.addColorStop(0, '#1e2d18'); tg.addColorStop(.5, '#182410'); tg.addColorStop(1, '#0f1a08');
-      ctx.fillStyle = tg; ctx.fill();
-      ctx.beginPath();
-      TPTS.forEach((p, i) => i === 0 ? ctx.moveTo(px(p[0]), py(p[1])) : ctx.lineTo(px(p[0]), py(p[1])));
-      ctx.strokeStyle = 'rgba(60,90,50,.45)'; ctx.lineWidth = 1.5; ctx.stroke();
-      const wg = ctx.createLinearGradient(0, py(.84), 0, H);
-      wg.addColorStop(0, 'rgba(0,28,60,.7)'); wg.addColorStop(1, 'rgba(0,10,30,.95)');
-      ctx.fillStyle = wg; ctx.fillRect(0, py(.84), W, H);
-
-      if (terrainBlock) {
-        ctx.fillStyle = 'rgba(160,40,20,.07)'; ctx.fillRect(px(BLOS_X), 0, W - px(BLOS_X), H);
-        ctx.strokeStyle = 'rgba(160,50,30,.4)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(px(BLOS_X), 0); ctx.lineTo(px(BLOS_X), py(.76)); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(160,60,40,.6)'; ctx.font = `${Math.max(9, W * .010)}px 'JetBrains Mono'`;
-        ctx.textAlign = 'center'; ctx.fillText('TERRAIN / BLOS', px(.67), py(.07));
-      }
-
-      ctx.strokeStyle = 'rgba(80,100,80,.25)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(px(BLOS_X), py(.09)); ctx.lineTo(px(BLOS_X), py(.77)); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(90,120,90,.5)'; ctx.font = `${Math.max(8, W * .009)}px 'JetBrains Mono'`;
-      ctx.textAlign = 'center';
-      ctx.fillText('LOS', px(.25), py(.07));
-      if (!terrainBlock) ctx.fillText('BLOS', px(.65), py(.07));
-    }
-
-    function drawLinks() {
-      dashOff -= 1.1;
-      const rp = getRelayPos();
-      const gx = px(GX) + 8, gy = py(GY) - 28;
-      const rx = px(rp.x), ry = py(rp.y);
-      const mx = px(muav.x), my = py(muav.y);
-
-      // GCS → Relay
-      if (relay.phase !== 'ground') {
-        const rl = rLinkDisp;
-        if (rl > 0.02) {
-          ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(rx, ry);
-          ctx.strokeStyle = linkColor(rl);
-          ctx.globalAlpha = 0.5 + rl * .35;
-          ctx.setLineDash([6, 4]); ctx.lineDashOffset = dashOff; ctx.lineWidth = 1.5 + rl * .8; ctx.stroke();
-          ctx.setLineDash([]); ctx.globalAlpha = 1;
-          const t = (frame * .016) % 1;
-          ctx.beginPath(); ctx.arc(gx + (rx - gx) * t, gy + (ry - gy) * t, 2.5, 0, Math.PI * 2);
-          ctx.fillStyle = linkColor(rl); ctx.fill();
-          ctx.fillStyle = linkColor(rl); ctx.globalAlpha = .6;
-          ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-          ctx.fillText('C2 UPLINK', (gx + rx) / 2 - 8, (gy + ry) / 2 - 8); ctx.globalAlpha = 1;
+        function log(msg, cls = 'info') {
+            const t = String(Math.floor(frame / 60)).padStart(4, '0');
+            logLines.push({ t, msg, cls });
+            if (logLines.length > 50) logLines.shift();
+            const box = document.getElementById('logBox');
+            box.innerHTML = logLines.slice(-8).map(l => `<div class="log-entry ${l.cls}">[T+${l.t}] ${l.msg}</div>`).join('');
+            box.scrollTop = box.scrollHeight;
         }
-      }
 
-      // Relay → Mission
-      const ml = mLinkDisp;
-      const mActive = ['flying', 'blos', 'orbiting', 'resuming', 'reacq'].includes(muav.phase);
-      if (mActive && ml > 0.02 && relay.phase === 'orbiting' && !relayFailed) {
-        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(mx, my);
-        ctx.strokeStyle = linkColor(ml); ctx.globalAlpha = 0.5 + ml * .35;
-        ctx.setLineDash([6, 4]); ctx.lineDashOffset = -dashOff; ctx.lineWidth = 1.5 + ml * .8; ctx.stroke();
-        ctx.setLineDash([]); ctx.globalAlpha = 1;
-        const t2 = (frame * .016 + .5) % 1;
-        ctx.beginPath(); ctx.arc(rx + (mx - rx) * t2, ry + (my - ry) * t2, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = linkColor(ml); ctx.fill();
-        ctx.fillStyle = linkColor(ml); ctx.globalAlpha = .6;
-        ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-        ctx.fillText('RELAY C2', (rx + mx) / 2 + 8, (ry + my) / 2 - 8); ctx.globalAlpha = 1;
-      }
+        function resize() { W = canvas.offsetWidth; H = canvas.offsetHeight; canvas.width = W; canvas.height = H; }
+        function px(n) { return n * W; }
+        function py(n) { return n * H; }
 
-      // Direct GCS → Mission
-      const dl = dLinkDisp;
-      if (mActive && dl > 0.02) {
-        ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(mx, my);
-        ctx.strokeStyle = linkColor(dl); ctx.globalAlpha = 0.28 + dl * .18;
-        ctx.setLineDash([3, 7]); ctx.lineDashOffset = dashOff * .5; ctx.lineWidth = 1; ctx.stroke();
-        ctx.setLineDash([]); ctx.globalAlpha = 1;
-      }
-
-      // Lost link route
-      if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
-        const wx = px(REACQ_X), wy = py(REACQ_Y);
-        ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(wx, wy);
-        ctx.strokeStyle = 'rgba(180,155,40,.55)'; ctx.setLineDash([4, 5]); ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
-        ctx.beginPath(); ctx.arc(wx, wy, 5, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(180,155,40,.7)'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.fillStyle = 'rgba(160,140,40,.65)'; ctx.font = `${Math.max(7, W * .009)}px 'JetBrains Mono'`;
-        ctx.textAlign = 'center'; ctx.fillText('REACQ WP', wx, wy - 11);
-        const pulse = (Math.sin(frame * .12) + 1) * .5;
-        ctx.beginPath(); ctx.arc(wx, wy, 8 + pulse * 6, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(180,155,40,${.35 - pulse * .28})`; ctx.lineWidth = 1; ctx.stroke();
-        ctx.fillStyle = 'rgba(160,140,40,.5)'; ctx.textAlign = 'center';
-        ctx.fillText('LOST LINK ROUTE', (mx + wx) / 2, (my + wy) / 2 - 10);
-      }
-    }
-
-    function drawGCS() {
-      const x = px(GX), y = py(GY);
-      ctx.fillStyle = '#4a5a3a'; ctx.fillRect(x - 18, y - 10, 36, 14);
-      ctx.fillStyle = '#3a4a2a'; ctx.fillRect(x - 12, y - 18, 24, 10);
-      ctx.fillStyle = '#222';
-      ctx.beginPath(); ctx.arc(x - 10, y + 5, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + 10, y + 5, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#7ab0a0'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(x + 2, y - 18); ctx.lineTo(x + 8, y - 32); ctx.stroke();
-      ctx.beginPath(); ctx.arc(x + 8, y - 32, 5, -Math.PI * .9, Math.PI * .15); ctx.stroke();
-      const pulse = (Math.sin(frame * .09) + 1) * .5;
-      ctx.beginPath(); ctx.arc(x + 8, y - 32, 8 + pulse * 6, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(100,170,140,${.25 - pulse * .2})`; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#8aaa90'; ctx.font = `bold ${Math.max(9, W * .011)}px 'JetBrains Mono'`;
-      ctx.textAlign = 'center'; ctx.fillText('GCS', x, y + 22);
-      ctx.fillStyle = '#5a7a60'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
-      ctx.fillText('HUB / C2', x, y + 32);
-    }
-
-    function drawRelayUAV() {
-      if (relay.phase === 'ground') return;
-      const rp = getRelayPos();
-      const x = px(rp.x), y = py(rp.y);
-      const failed = relay.phase === 'failed';
-      const col = failed ? '#6a3020' : '#5b9bd5';
-      ctx.globalAlpha = failed ? .55 : 1;
-      if (relay.phase === 'orbiting') {
-        ctx.beginPath();
-        ctx.ellipse(px(RLX), py(RLY), px(ROR_X), py(ROR_Y), 0, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(70,110,160,.22)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-      }
-      const bank = relay.phase === 'orbiting' ? -Math.sin(relay.orbit) * .32 : 0;
-      ctx.save(); ctx.translate(x, y); ctx.rotate(bank);
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.ellipse(0, 0, 17, 4, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3, 0); ctx.lineTo(2, -14); ctx.lineTo(-10, -2); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3, 0); ctx.lineTo(2, 14); ctx.lineTo(-10, 2); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(-17, -6); ctx.lineTo(-17, 6); ctx.closePath(); ctx.fill();
-      ctx.restore(); ctx.globalAlpha = 1;
-      ctx.fillStyle = failed ? '#7a4030' : col;
-      ctx.font = `bold ${Math.max(8, W * .010)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-      ctx.fillText(failed ? 'RELAY [FAIL]' : 'RELAY UAV', x, y - 22);
-      ctx.fillStyle = (failed ? 'rgba(120,60,40,.7)' : 'rgba(70,130,180,.7)');
-      ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
-      const sub = relay.phase === 'climbing' ? 'CLIMBING' : relay.phase === 'orbiting' ? 'ORBIT / EO-IR' : 'FAILED';
-      ctx.fillText(sub, x, y - 13);
-    }
-
-    function drawMissionUAV() {
-      if (muav.phase === 'ground') return;
-      const x = px(muav.x), y = py(muav.y);
-      const el = effectiveLink();
-      const col = muav.phase === 'lostlink' ? '#c0392b' : linkColor(el);
-      ctx.fillStyle = 'rgba(0,0,0,.1)';
-      ctx.beginPath(); ctx.ellipse(x, py(.79), 13, 3, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.ellipse(x, y, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x + 3, y - 17); ctx.lineTo(x - 11, y - 2); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x + 3, y + 17); ctx.lineTo(x - 11, y + 2); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x - 18, y - 7); ctx.lineTo(x - 18, y + 7); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = col + '77'; ctx.fillRect(x - 3, y + 5, 6, 6);
-      ctx.fillStyle = col;
-      ctx.font = `bold ${Math.max(8, W * .010)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-      const lbl = muav.phase === 'lostlink' ? 'MISSION [LOST LINK]' :
-        muav.phase === 'reacq' ? 'MISSION [REACQ]' :
-          muav.phase === 'orbiting' ? 'MISSION [ORBIT]' : 'MISSION UAV';
-      ctx.fillText(lbl, x, y - 25);
-      ctx.fillStyle = col + '88'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
-      if (muav.phase === 'lostlink') ctx.fillText('LOST LINK PROCEDURE', x, y - 15);
-      else if (muav.phase === 'blos' || muav.phase === 'orbiting') ctx.fillText('BLOS OPERATIONS', x, y - 15);
-    }
-
-    function drawMissionOrbitPath() {
-      if (muav.phase !== 'orbiting') return;
-      ctx.beginPath(); ctx.ellipse(px(MIS_X), py(M_ALT), px(.055), py(.035), 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(80,130,80,.18)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-    }
-
-    function drawRangeBar() {
-      if (muav.phase === 'ground') return;
-      const barY = py(.92);
-      ctx.beginPath(); ctx.moveTo(px(GX), barY); ctx.lineTo(px(muav.x), barY);
-      ctx.strokeStyle = 'rgba(70,110,80,.28)'; ctx.lineWidth = 1; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
-      const km = Math.round((muav.x - GX) * 180);
-      ctx.fillStyle = 'rgba(70,110,80,.55)'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
-      ctx.textAlign = 'center'; ctx.fillText(`${km} km`, px((GX + muav.x) / 2), barY + 11);
-    }
-
-    function drawHUDText() {
-      ctx.fillStyle = 'rgba(70,100,80,.45)'; ctx.font = `${Math.max(8, W * .009)}px 'JetBrains Mono'`;
-      ctx.textAlign = 'left'; ctx.fillText(`T+${String(Math.floor(frame / 60)).padStart(4, '0')}s`, 8, 15);
-      ctx.textAlign = 'right'; ctx.fillText('UAV AIRBORNE RELAY SIMULATOR', W - 8, 15);
-    }
-
-    function triggerLostLink(reason) {
-      if (['lostlink', 'reacq'].includes(muav.phase)) return;
-      muav.phase = 'lostlink';
-      lostLinkTimer = TIMER_MAX;
-      timerRunning = true;
-      document.getElementById('timerWrap').style.display = 'block';
-      document.getElementById('decPanel').style.display = 'none';
-      reacquired = false;
-      log(`LOST LINK — ${reason}`, 'fail');
-      setRec('Lost link condition. Launch Relay UAV immediately to restore command link.', true);
-    }
-
-    function setRec(msg, show) {
-      const el = document.getElementById('recMsg');
-      el.textContent = msg;
-      el.style.display = show ? 'block' : 'none';
-    }
-
-    function updateLogic() {
-      if (relay.phase === 'climbing') {
-        relay.x += (RLX - relay.x) * .018; relay.y += (RLY - relay.y) * .022;
-        if (Math.abs(relay.y - RLY) < .012) {
-          relay.x = RLX; relay.y = RLY; relay.phase = 'orbiting';
-          log('Relay UAV on station — orbit established. Relay C2 active.', 'ok');
-          document.getElementById('btnBT').disabled = false;
-          document.getElementById('btnRF').disabled = false;
+        function getRelayPos() {
+            if (relay.phase === 'orbiting')
+                return { x: RLX + ROR_X * Math.cos(relay.orbit), y: RLY };
+            return { x: relay.x, y: relay.y };
         }
-      }
-      if (relay.phase === 'orbiting') relay.orbit += .016;
 
-      if (muav.phase === 'launching') {
-        muav.x += .0028; muav.y += (M_ALT - muav.y) * .07;
-        if (muav.x > GX + .07) { muav.phase = 'flying'; log('Mission UAV airborne — direct link active', 'info'); }
-      }
+        function calcRelayLink() {
+            if (relay.phase !== 'orbiting' || relayFailed) return 0;
+            return 1;
+        }
 
-      if (muav.phase === 'flying') {
-        muav.x += .0010;
-        const approaching = muav.x >= BLOS_X - 0.07;
-        if (approaching && relay.phase !== 'orbiting')
-          setRec('BLOS detected. Relay UAV recommended to maintain command and control.', true);
-        if (muav.x >= BLOS_X) {
-          if (calcDirectLink() <= 0.02 && calcMissionViaRelay() <= 0.02) {
-            triggerLostLink('Entered BLOS with no relay coverage');
-          } else {
-            muav.phase = 'blos';
-            log('Mission UAV entered BLOS — relay C2 bridging command link', 'info');
+        function calcMissionViaRelay() {
+            if (relay.phase !== 'orbiting' || relayFailed) return 0;
+            if (muav.phase === 'ground' || muav.phase === 'launching') return 0;
+            const rp = getRelayPos();
+            const d = Math.hypot(muav.x - rp.x, muav.y - rp.y);
+            const horizon = REL_MAX_R * 1.2;
+            if (d < horizon) return 1;
+            return 0;
+        }
+
+        function calcDirectLink() {
+            if (muav.phase === 'ground' || muav.phase === 'launching') return 0;
+            if (muav.phase === 'lostlink') return 0; // msn is in blos, no direct los
+            if (muav.x < BLOS_X) return 1;
+            if (terrainBlock) return 0;
+            const d = Math.hypot(muav.x - GX, muav.y - GY);
+            const maxRange = LOS_MAX_R * 1.6;
+            if (d >= maxRange) return 0;
+            return 1 - (d / maxRange);
+        }
+
+        function effectiveLink() { return Math.max(calcDirectLink(), calcMissionViaRelay()); }
+
+        function lerpColor(c1, c2, t) {
+            t = Math.max(0, Math.min(1, t));
+            const parse = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+            const a = parse(c1), b = parse(c2);
+            return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+        }
+
+        function linkColor(s) {
+            if (s >= 0.65) return '#4caf6e';
+            if (s >= 0.25) return lerpColor('#d4a017', '#4caf6e', (s - 0.25) / 0.40);
+            if (s >= 0.01) return lerpColor('#c0392b', '#d4a017', s / 0.25);
+            return '#c0392b';
+        }
+
+        function drawBg() {
+            const sky = ctx.createLinearGradient(0, 0, 0, H * 0.65);
+            sky.addColorStop(0, '#0d1117'); sky.addColorStop(1, '#151b24');
+            ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+        }
+
+        // peaks at ~0.50-0.54 — tall enough to visually block gcs→blos los
+        // but low enough that msn uav flies clearly above them at M_ALT=0.30
+        const TPTS = [
+            [0, .82], [.06, .80], [.12, .76], [.18, .70],
+            [.24, .54], [.28, .50], [.32, .54],
+            [.38, .60], [.44, .65], [.50, .68],
+            [.57, .72], [.63, .67], [.69, .74],
+            [.76, .77], [.85, .79], [1, .82]
+        ];
+
+        function drawTerrain() {
+            ctx.beginPath(); ctx.moveTo(0, H);
+            TPTS.forEach(p => ctx.lineTo(px(p[0]), py(p[1])));
+            ctx.lineTo(W, H); ctx.closePath();
+            const tg = ctx.createLinearGradient(0, H * 0.5, 0, H);
+            tg.addColorStop(0, '#1e2d18'); tg.addColorStop(.5, '#182410'); tg.addColorStop(1, '#0f1a08');
+            ctx.fillStyle = tg; ctx.fill();
+            ctx.beginPath();
+            TPTS.forEach((p, i) => i === 0 ? ctx.moveTo(px(p[0]), py(p[1])) : ctx.lineTo(px(p[0]), py(p[1])));
+            ctx.strokeStyle = 'rgba(60,90,50,.45)'; ctx.lineWidth = 1.5; ctx.stroke();
+            const wg = ctx.createLinearGradient(0, py(.84), 0, H);
+            wg.addColorStop(0, 'rgba(0,28,60,.7)'); wg.addColorStop(1, 'rgba(0,10,30,.95)');
+            ctx.fillStyle = wg; ctx.fillRect(0, py(.84), W, H);
+            if (terrainBlock) {
+                ctx.fillStyle = 'rgba(160,40,20,.07)'; ctx.fillRect(px(BLOS_X), 0, W - px(BLOS_X), H);
+                ctx.strokeStyle = 'rgba(160,50,30,.4)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(px(BLOS_X), 0); ctx.lineTo(px(BLOS_X), py(.76)); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(160,60,40,.6)'; ctx.font = `${Math.max(9, W * .010)}px 'JetBrains Mono'`;
+                ctx.textAlign = 'center'; ctx.fillText('TERRAIN / BLOS', px(.67), py(.07));
+            }
+            ctx.strokeStyle = 'rgba(80,100,80,.25)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(px(BLOS_X), py(.09)); ctx.lineTo(px(BLOS_X), py(.77)); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(90,120,90,.5)'; ctx.font = `${Math.max(8, W * .009)}px 'JetBrains Mono'`;
+            ctx.textAlign = 'center'; ctx.fillText('LOS', px(.25), py(.07));
+            if (!terrainBlock) ctx.fillText('BLOS', px(.65), py(.07));
+        }
+
+        function drawLinks() {
+            dashOff -= 1.1;
+            const rp = getRelayPos();
+            const gx = px(GX) + 8, gy = py(GY) - 28;
+            const rx = px(rp.x), ry = py(rp.y);
+            const mx = px(muav.x), my = py(muav.y);
+            if (relay.phase !== 'ground') {
+                const rl = rLinkDisp;
+                if (rl > 0.02) {
+                    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(rx, ry);
+                    ctx.strokeStyle = linkColor(rl); ctx.globalAlpha = 0.5 + rl * .35;
+                    ctx.setLineDash([6, 4]); ctx.lineDashOffset = dashOff; ctx.lineWidth = 1.5 + rl * .8; ctx.stroke();
+                    ctx.setLineDash([]); ctx.globalAlpha = 1;
+                    const t = (frame * .016) % 1;
+                    ctx.beginPath(); ctx.arc(gx + (rx - gx) * t, gy + (ry - gy) * t, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = linkColor(rl); ctx.fill();
+                    ctx.fillStyle = linkColor(rl); ctx.globalAlpha = .6;
+                    ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
+                    ctx.fillText('C2 UPLINK', (gx + rx) / 2 - 8, (gy + ry) / 2 - 8); ctx.globalAlpha = 1;
+                }
+            }
+            const ml = mLinkDisp;
+            const mActive = ['flying', 'blos', 'orbiting', 'orbit_los', 'resuming', 'reacq'].includes(muav.phase);
+            if (mActive && ml > 0.02 && relay.phase === 'orbiting' && !relayFailed) {
+                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(mx, my);
+                ctx.strokeStyle = linkColor(ml); ctx.globalAlpha = 0.5 + ml * .35;
+                ctx.setLineDash([6, 4]); ctx.lineDashOffset = -dashOff; ctx.lineWidth = 1.5 + ml * .8; ctx.stroke();
+                ctx.setLineDash([]); ctx.globalAlpha = 1;
+                const t2 = (frame * .016 + .5) % 1;
+                ctx.beginPath(); ctx.arc(rx + (mx - rx) * t2, ry + (my - ry) * t2, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = linkColor(ml); ctx.fill();
+                ctx.fillStyle = linkColor(ml); ctx.globalAlpha = .6;
+                ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
+                ctx.fillText('RELAY DATALINK', (rx + mx) / 2 + 8, (ry + my) / 2 - 8); ctx.globalAlpha = 1;
+            }
+            const dl = dLinkDisp;
+            if (mActive && dl > 0.02) {
+                ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(mx, my);
+                ctx.strokeStyle = linkColor(dl); ctx.globalAlpha = 0.28 + dl * .18;
+                ctx.setLineDash([3, 7]); ctx.lineDashOffset = dashOff * .5; ctx.lineWidth = 1; ctx.stroke();
+                ctx.setLineDash([]); ctx.globalAlpha = 1;
+            }
+            if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
+                const wx = px(REACQ_X), wy = py(REACQ_Y);
+                ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(wx, wy);
+                ctx.strokeStyle = 'rgba(180,155,40,.55)'; ctx.setLineDash([4, 5]); ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+                ctx.beginPath(); ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(180,155,40,.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.fillStyle = 'rgba(160,140,40,.65)'; ctx.font = `${Math.max(7, W * .009)}px 'JetBrains Mono'`;
+                ctx.textAlign = 'center'; ctx.fillText('REACQ WP', wx, wy - 11);
+                const pulse = (Math.sin(frame * .12) + 1) * .5;
+                ctx.beginPath(); ctx.arc(wx, wy, 8 + pulse * 6, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(180,155,40,${.35 - pulse * .28})`; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fillStyle = 'rgba(160,140,40,.5)'; ctx.textAlign = 'center';
+                ctx.fillText('LOST LINK ROUTE', (mx + wx) / 2, (my + wy) / 2 - 10);
+            }
+        }
+
+        function drawGCS() {
+            const x = px(GX), y = py(GY);
+            ctx.fillStyle = '#4a5a3a'; ctx.fillRect(x - 18, y - 10, 36, 14);
+            ctx.fillStyle = '#3a4a2a'; ctx.fillRect(x - 12, y - 18, 24, 10);
+            ctx.fillStyle = '#222';
+            ctx.beginPath(); ctx.arc(x - 10, y + 5, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + 10, y + 5, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#7ab0a0'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(x + 2, y - 18); ctx.lineTo(x + 8, y - 32); ctx.stroke();
+            ctx.beginPath(); ctx.arc(x + 8, y - 32, 5, -Math.PI * .9, Math.PI * .15); ctx.stroke();
+            const pulse = (Math.sin(frame * .09) + 1) * .5;
+            ctx.beginPath(); ctx.arc(x + 8, y - 32, 8 + pulse * 6, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(100,170,140,${.25 - pulse * .2})`; ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = '#8aaa90'; ctx.font = `bold ${Math.max(9, W * .011)}px 'JetBrains Mono'`;
+            ctx.textAlign = 'center'; ctx.fillText('GCS', x, y + 22);
+            ctx.fillStyle = '#5a7a60'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
+            ctx.fillText('HUB / C2', x, y + 32);
+        }
+
+        function drawRelayUAV() {
+            if (relay.phase === 'ground') return;
+            const rp = getRelayPos();
+            const x = px(rp.x), y = py(rp.y);
+            const failed = relay.phase === 'failed';
+            const col = failed ? '#6a3020' : '#5b9bd5';
+            ctx.globalAlpha = failed ? .55 : 1;
+            if (relay.phase === 'orbiting') {
+                ctx.beginPath();
+                ctx.ellipse(px(RLX), py(RLY), px(ROR_X), py(0.004), 0, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(70,110,160,.22)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+            }
+            const bank = relay.phase === 'orbiting' ? -Math.sin(relay.orbit) * .32 : 0;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(bank);
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.ellipse(0, 0, 17, 4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3, 0); ctx.lineTo(2, -14); ctx.lineTo(-10, -2); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3, 0); ctx.lineTo(2, 14); ctx.lineTo(-10, 2); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(-17, -6); ctx.lineTo(-17, 6); ctx.closePath(); ctx.fill();
+            ctx.restore(); ctx.globalAlpha = 1;
+            ctx.fillStyle = failed ? '#7a4030' : col;
+            ctx.font = `bold ${Math.max(8, W * .010)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
+            ctx.fillText(failed ? 'RELAY UAV [FAIL]' : 'RELAY UAV', x, y - 22);
+            ctx.fillStyle = failed ? 'rgba(120,60,40,.7)' : 'rgba(70,130,180,.7)';
+            ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
+            ctx.fillText(relay.phase === 'climbing' ? 'CLIMBING' : relay.phase === 'orbiting' ? 'ORBIT / ALT HOLD' : 'FAILED', x, y - 13);
+        }
+
+        function drawMissionUAV() {
+            if (muav.phase === 'ground') return;
+            const x = px(muav.x), y = py(muav.y);
+            const el = effectiveLink();
+            const col = muav.phase === 'lostlink' ? '#c0392b' : linkColor(el);
+            ctx.fillStyle = 'rgba(0,0,0,.1)';
+            ctx.beginPath(); ctx.ellipse(x, py(.79), 13, 3, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.ellipse(x, y, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x + 3, y - 17); ctx.lineTo(x - 11, y - 2); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x + 3, y + 17); ctx.lineTo(x - 11, y + 2); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x - 18, y - 7); ctx.lineTo(x - 18, y + 7); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = col + '77'; ctx.fillRect(x - 3, y + 5, 6, 6);
+            ctx.fillStyle = col;
+            ctx.font = `bold ${Math.max(8, W * .010)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
+            const lbl = muav.phase === 'lostlink' ? 'MISSION UAV [LOST LINK]' : muav.phase === 'reacq' ? 'MISSION UAV [REACQ]' : muav.phase === 'orbiting' ? 'MISSION UAV [ORBIT]' : muav.phase === 'orbit_los' ? 'MISSION UAV [HOLD ORBIT]' : 'MISSION UAV';
+            ctx.fillText(lbl, x, y - 25);
+            ctx.fillStyle = col + '88'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
+            if (muav.phase === 'lostlink') ctx.fillText('LOST LINK PROCEDURE', x, y - 15);
+            else if (muav.phase === 'blos' || muav.phase === 'orbiting') ctx.fillText('BLOS OPNS', x, y - 15);
+            else if (muav.phase === 'orbit_los') ctx.fillText('ALT HOLD', x, y - 15);
+        }
+
+        function drawOrbitPaths() {
+            if (muav.phase === 'orbiting') {
+                ctx.beginPath();
+                ctx.ellipse(px(MIS_X), py(M_ALT), px(.055), py(0.004), 0, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(80,130,80,.18)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+            }
+            if (muav.phase === 'orbit_los') {
+                const cx = GX + 0.18;
+                ctx.beginPath();
+                ctx.ellipse(px(cx), py(M_ALT), px(.035), py(0.004), 0, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(80,130,80,.18)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+            }
+        }
+
+        function drawRangeBar() {
+            if (muav.phase === 'ground') return;
+            const barY = py(.92);
+            ctx.beginPath(); ctx.moveTo(px(GX), barY); ctx.lineTo(px(muav.x), barY);
+            ctx.strokeStyle = 'rgba(70,110,80,.28)'; ctx.lineWidth = 1; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+            const nm = Math.round((muav.x - GX) * NM_SCALE);
+            ctx.fillStyle = 'rgba(70,110,80,.55)'; ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`;
+            ctx.textAlign = 'center'; ctx.fillText(`${nm} NM`, px((GX + muav.x) / 2), barY + 11);
+        }
+
+        function drawHUDText() {
+            ctx.fillStyle = 'rgba(70,100,80,.45)'; ctx.font = `${Math.max(8, W * .009)}px 'JetBrains Mono'`;
+            ctx.textAlign = 'left'; ctx.fillText(`T+${String(Math.floor(frame / 60)).padStart(4, '0')}s`, 8, 15);
+            ctx.textAlign = 'right'; ctx.fillText('UAV AIRBORNE RELAY SIMULATION', W - 8, 15);
+        }
+
+        function triggerLostLink(reason) {
+            if (['lostlink', 'reacq'].includes(muav.phase)) return;
+            muav.phase = 'lostlink';
+            lostLinkTimer = TIMER_MAX; timerRunning = true;
+            document.getElementById('timerWrap').classList.remove('hidden');
+            document.getElementById('decPanel').classList.add('hidden');
+            reacquired = false;
+            log(`lost link \u2014 ${reason}`, 'fail');
+            setRec('lost link condition. launch relay uav immediately to restore c2.', true);
+        }
+
+        function setRec(msg, show) {
+            const el = document.getElementById('recMsg');
+            el.textContent = msg; el.style.display = show ? 'block' : 'none';
+        }
+
+        function updateLogic() {
+            if (relay.phase === 'climbing') {
+                relay.x += (RLX - relay.x) * .018; relay.y += (RLY - relay.y) * .022;
+                if (Math.abs(relay.y - RLY) < .012) {
+                    relay.x = RLX; relay.y = RLY; relay.phase = 'orbiting';
+                    log('relay uav on stn \u2014 orbit estb. relay datalink active.', 'ok');
+                    document.getElementById('btnBT').disabled = false;
+                    document.getElementById('btnRF').disabled = false;
+                    // if msn is on lost link route, relay arriving restores datalink — show decision panel
+                    // but DON'T freeze uav or change phase — let it keep flying the route
+                    if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
+                        timerRunning = false;
+                        document.getElementById('timerWrap').classList.add('hidden');
+                        document.getElementById('decPanel').classList.remove('hidden');
+                        setRec('relay datalink restored. uav continuing lost link route. select action to override.', false);
+                        log('relay on stn \u2014 datalink restored, pilot action required to override lost link route', 'ok');
+                    }
+                }
+            }
+            if (relay.phase === 'orbiting') relay.orbit += .016;
+
+            if (muav.phase === 'launching') {
+                muav.x += .0028; muav.y += (M_ALT - muav.y) * .07;
+                if (muav.x > GX + .07) { muav.phase = 'flying'; log('msn uav airborne \u2014 direct link active', 'info'); }
+            }
+
+            if (muav.phase === 'flying') {
+                muav.x += .0010; muav.y += (M_ALT - muav.y) * .04;
+                if (muav.x >= BLOS_X - 0.07 && relay.phase !== 'orbiting')
+                    setRec('blos detected. relay uav recommended for c2.', true);
+                if (muav.x >= BLOS_X) {
+                    muav.phase = 'blos';
+                    log('msn uav entered blos \u2014 relay required for c2', 'warn');
+                    setRec('', false);
+                }
+            }
+
+            if (muav.phase === 'blos') {
+                muav.x += .0010; muav.y += (M_ALT - muav.y) * .04; // keep alt consistent going toward msn area
+                const el = effectiveLink();
+                if (el <= 0.01 && muav.x > BLOS_X + 0.05)
+                    triggerLostLink(relayFailed ? 'relay failure' : terrainBlock ? 'terrain obstruction' : 'signal lost beyond los range');
+                if (muav.x >= MIS_X) {
+                    muav.phase = 'orbiting'; muav.orbitA = 0;
+                    log('msn uav at msn area \u2014 orbit commenced, alt hold active', 'ok');
+                }
+            }
+
+            if (muav.phase === 'orbiting') {
+                muav.orbitA += .018;
+                muav.x = MIS_X + .055 * Math.cos(muav.orbitA);
+                muav.y += (M_ALT - muav.y) * .08; // smooth alt settle, no teleport
+                if (relay.phase === 'orbiting' && !relayFailed) {
+                    if (calcMissionViaRelay() <= 0.01) triggerLostLink('relay link lost at msn area');
+                } else {
+                    if (calcDirectLink() <= 0.01) triggerLostLink('no relay \u2014 link lost at msn area');
+                }
+            }
+
+            if (muav.phase === 'orbit_los') {
+                muav.orbitA += .018;
+                const cx = muav._orbitCX || GX + 0.18;
+                const cy = muav._orbitCY || M_ALT;
+                muav.x = cx + .035 * Math.cos(muav.orbitA);
+                muav.y += (cy - muav.y) * .04;
+            }
+
+            if (muav.phase === 'resuming') {
+                muav.x += .0010;
+                if (muav.x >= BLOS_X) {
+                    muav.phase = 'blos';
+                    log('msn uav re-entered blos zone', 'info');
+                }
+            }
+
+            if (timerRunning && muav.phase === 'lostlink') {
+                lostLinkTimer -= 1 / 60;
+                const pct = Math.max(0, lostLinkTimer / TIMER_MAX);
+                document.getElementById('timerVal').textContent = Math.ceil(Math.max(0, lostLinkTimer)) + 's';
+                document.getElementById('timerBar').style.width = (pct * 100) + '%';
+                document.getElementById('timerBar').style.background = pct > 0.5 ? 'var(--red)' : pct > 0.25 ? 'var(--yellow)' : '#8a2020';
+                if (effectiveLink() > 0.02) {
+                    muav.phase = 'reacq'; timerRunning = false;
+                    document.getElementById('timerWrap').classList.add('hidden');
+                    reacquired = false;
+                    log('link restored \u2014 msn uav navigating to reacq wp', 'ok');
+                    setRec('c2 restored. msn uav navigating to reacq wp.', false);
+                }
+                if (lostLinkTimer <= 0) {
+                    timerRunning = false;
+                    document.getElementById('timerWrap').classList.add('hidden');
+                    log('lost link timer expired \u2014 executing lost link route', 'warn');
+                }
+            }
+
+            if (muav.phase === 'lostlink') {
+                if (effectiveLink() > 0.02) {
+                    muav.phase = 'reacq'; reacquired = false;
+                    log('link restored \u2014 msn uav navigating to reacq wp', 'ok');
+                    setRec('c2 restored. msn uav navigating to reacq wp.', false);
+                } else if (!timerRunning) {
+                    const dx = REACQ_X - muav.x, dy = REACQ_Y - muav.y;
+                    const d = Math.hypot(dx, dy);
+                    if (d > 0.012) { muav.x += dx / d * .0011; muav.y += dy / d * .0011; }
+                    else {
+                        muav.phase = 'reacq';
+                        log('msn uav at reacq wp \u2014 awaiting link recovery', 'warn');
+                    }
+                }
+            }
+
+            if (muav.phase === 'reacq') {
+                const dist = Math.hypot(muav.x - REACQ_X, muav.y - REACQ_Y);
+                if (muav.x < BLOS_X && dist < 0.04) {
+                    if (!reacquired) {
+                        reacquired = true; muav.orbitA = 0;
+                        log('link reacquired \u2014 direct los restored', 'ok');
+                        document.getElementById('decPanel').classList.remove('hidden');
+                        setRec('link reacquired. select orbit within los or resume msn.', false);
+                    }
+                    muav.orbitA += .018;
+                    muav.x = REACQ_X + .035 * Math.cos(muav.orbitA);
+                    muav.y += (REACQ_Y - muav.y) * .04;
+                    // no return here — fall through to lerp block so dLinkDisp updates
+                }
+                if (!reacquired) {
+                    const dx = REACQ_X - muav.x, dy = REACQ_Y - muav.y;
+                    const d = Math.hypot(dx, dy);
+                    if (d > 0.015) { muav.x += dx / d * .0006; muav.y += dy / d * .0006; }
+                }
+            }
+
+            // lerp logic — gradual only when actively flying through signal zones
+            // snap immediately when position is static/known (ground, orbit, reacq wp)
+            const rawRL = calcRelayLink(), rawML = calcMissionViaRelay(), rawDL = calcDirectLink();
+            const spd = 0.04; // ~25 frames to traverse no→weak→degraded→strong during flight
+
+            if (relay.phase === 'failed' || relayFailed) {
+                rLinkDisp += (0 - rLinkDisp) * spd;
+                mLinkDisp += (0 - mLinkDisp) * spd;
+            } else if (relay.phase === 'orbiting') {
+                // relay is on stn — snap gcs→relay, lerp relay→msn based on msn movement
+                rLinkDisp = rawRL;
+                mLinkDisp += (rawML - mLinkDisp) * spd;
+            } else {
+                rLinkDisp += (rawRL - rLinkDisp) * spd;
+                mLinkDisp += (rawML - mLinkDisp) * spd;
+            }
+
+            rLinkDisp = Math.max(0, Math.min(1, rLinkDisp));
+            mLinkDisp = Math.max(0, Math.min(1, mLinkDisp));
+
+            // direct link — snap when msn is in static los position, lerp during flight
+            if (muav.phase === 'ground' || muav.phase === 'lostlink') {
+                dLinkDisp += (0 - dLinkDisp) * spd;
+            } else if (muav.phase === 'reacq' || muav.phase === 'orbit_los') {
+                // msn is in los zone — snap direct link immediately, no lerp lag
+                dLinkDisp = rawDL;
+            } else {
+                dLinkDisp += (rawDL - dLinkDisp) * spd;
+            }
+            dLinkDisp = Math.max(0, Math.min(1, dLinkDisp));
+        }
+
+        function updateUI() {
+            function setBars(id, s) {
+                const bars = document.querySelectorAll(`#${id} .sig-bar`);
+                const cls = s >= 0.65 ? 'lit-green' : s >= 0.25 ? 'lit-yellow' : 'lit-red';
+                [0.08, .3, .6, .85].forEach((t, i) => { bars[i].className = `sig-bar b${i + 1}${s >= t ? ' ' + cls : ''}`; });
+            }
+            const relD = (relay.phase === 'failed' || relayFailed) ? 0 : mLinkDisp;
+            const dDisp = (muav.phase === 'lostlink' || muav.phase === 'ground') ? 0 : dLinkDisp;
+            setBars('sigR', relay.phase === 'orbiting' ? rLinkDisp : 0);
+            setBars('sigM', relD);
+            setBars('sigD', dDisp);
+
+            function linkLbl(id, v) {
+                const e = document.getElementById(id);
+                if (v <= 0.02) { e.textContent = 'NO LINK'; e.className = 'status-val red'; }
+                else if (v < .35) { e.textContent = 'WEAK'; e.className = 'status-val red'; }
+                else if (v < .65) { e.textContent = 'DEGRADED'; e.className = 'status-val yellow'; }
+                else { e.textContent = 'STRONG'; e.className = 'status-val green'; }
+            }
+            linkLbl('lblRL', relay.phase === 'orbiting' ? rLinkDisp : 0);
+            linkLbl('lblML', relD);
+            linkLbl('lblDL', dDisp);
+
+            const modeEl = document.getElementById('lblMode');
+            if (muav.phase === 'lostlink') { modeEl.textContent = 'LOST LINK'; modeEl.className = 'status-val red'; }
+            else if (relD > 0.02 && dLinkDisp > 0.02) { modeEl.textContent = 'DIRECT+RELAY'; modeEl.className = 'status-val green'; }
+            else if (relD > 0.02) { modeEl.textContent = 'RELAY DATALINK'; modeEl.className = 'status-val blue'; }
+            else if (dLinkDisp > 0.02) { modeEl.textContent = 'DIRECT'; modeEl.className = 'status-val green'; }
+            else { modeEl.textContent = '--'; modeEl.className = 'status-val dim'; }
+
+            const rPhMap = { ground: 'GROUND', climbing: 'CLIMBING', orbiting: 'ON STATION', failed: 'FAILED' };
+            const mPhMap = { ground: 'GROUND', launching: 'LAUNCHING', flying: 'LOS / DIRECT', blos: 'BLOS / RELAY DATALINK', lostlink: 'LOST LINK PROCEDURE', reacq: 'REACQ WAYPOINT', orbiting: 'MISSION ORBIT', orbit_los: 'HOLD ORBIT', resuming: 'RESUMING MISSION' };
+            const rpEl = document.getElementById('lblRph');
+            rpEl.textContent = rPhMap[relay.phase] || relay.phase.toUpperCase();
+            rpEl.className = `status-val ${relay.phase === 'failed' ? 'red' : relay.phase === 'orbiting' ? 'green' : 'dim'}`;
+            const mpEl = document.getElementById('lblMph');
+            mpEl.textContent = mPhMap[muav.phase] || muav.phase.toUpperCase();
+            mpEl.className = `status-val ${muav.phase === 'lostlink' ? 'red' : ['blos', 'orbiting', 'orbit_los', 'resuming'].includes(muav.phase) ? 'green' : muav.phase === 'reacq' ? 'yellow' : 'dim'}`;
+
+            // link geometry — alt calcs units changed to NM
+            const rp = getRelayPos();
+            const rAlt = relay.phase !== 'ground' ? '7000ft' : '--';
+            const mAlt = muav.phase !== 'ground' ? '5000ft' : '--';
+            const horizon = relay.phase !== 'ground' ? Math.round(Math.sqrt(2 * 6371 * ((parseInt(rAlt) || 5000) / 3.281 / 1000)) * 0.539957) + ' NM' : '--';
+            const gcsRelNM = relay.phase !== 'ground' ? ((Math.hypot(rp.x - GX, rp.y - GY)) * NM_SCALE).toFixed(1) + ' NM' : '--';
+            const relMisNM = relay.phase !== 'ground' && muav.phase !== 'ground' ? (Math.hypot(muav.x - rp.x, muav.y - rp.y) * NM_SCALE).toFixed(1) + ' NM' : '--';
+            document.getElementById('gRA').textContent = rAlt;
+            document.getElementById('gMA').textContent = mAlt;
+            document.getElementById('gRH').textContent = horizon;
+            document.getElementById('gGR').textContent = gcsRelNM;
+            document.getElementById('gRM').textContent = relMisNM;
+            const tbEl = document.getElementById('gTB');
+            tbEl.textContent = terrainBlock ? 'TRUE' : 'FALSE'; tbEl.className = `geo-val ${terrainBlock ? 't' : 'f'}`;
+            const lmg = document.getElementById('gLM');
+            if (muav.phase === 'lostlink') lmg.textContent = 'LOST LINK';
+            else if (relD > 0.02 && dLinkDisp > 0.02) lmg.textContent = 'DIRECT + RELAY DATALINK';
+            else if (relD > 0.02) lmg.textContent = 'RELAY DATALINK';
+            else if (dLinkDisp > 0.02) lmg.textContent = 'DIRECT ONLY';
+            else lmg.textContent = '--';
+
+            const pb = document.getElementById('pBadge'), pd = document.getElementById('pDesc');
+            const phases = {
+                ground_none: ['STANDBY', '', 'System ready. Launch Mission UAV or Relay UAV to begin.'],
+                climbing: ['RELAY UP', 'active', 'Relay UAV climbing to orbit altitude. C2 link path establishing.'],
+                relay_ready: ['RELAY ON STATION', 'active', 'Relay UAV on station at constant altitude. Mission UAV may launch.'],
+                flying: ['LOS OPS', 'active', 'Mission UAV in LOS zone. Direct link active.'],
+                blos: ['BLOS OPS', 'active', 'Mission UAV operating beyond LOS. Relay UAV maintaining C2 link.'],
+                lostlink: ['LOST LINK', 'fail', 'Lost link procedure active. UAV returning to reacquisition waypoint.'],
+                reacq: ['REACQ', 'warn', reacquired ? 'Link reacquired. Select orbit or resume mission.' : 'Mission UAV at reacquisition waypoint. Awaiting link recovery.'],
+                orbit_m: ['MISSION ORBIT', 'active', 'Mission UAV orbiting mission area at constant altitude. BLOS opns sustained.'],
+                orbit_los: ['ORBIT / LOS', 'active', 'Mission UAV holding orbit within LOS at constant altitude.'],
+                resuming: ['RESUMING', 'active', 'Mission UAV returning to mission area.'],
+            };
+            let key = 'ground_none';
+            if (relay.phase === 'climbing') key = 'climbing';
+            else if (relay.phase === 'orbiting' && muav.phase === 'ground') key = 'relay_ready';
+            else if (muav.phase === 'flying') key = 'flying';
+            else if (muav.phase === 'blos') key = 'blos';
+            else if (muav.phase === 'lostlink') key = 'lostlink';
+            else if (muav.phase === 'reacq') key = 'reacq';
+            else if (muav.phase === 'orbiting') key = 'orbit_m';
+            else if (muav.phase === 'orbit_los') key = 'orbit_los';
+            else if (muav.phase === 'resuming') key = 'resuming';
+            const p = phases[key] || phases.ground_none;
+            pb.textContent = p[0]; pb.className = `phase-badge ${p[1]}`; pd.textContent = p[2];
+        }
+
+        function cmdLaunchMission() {
+            if (muav.phase !== 'ground') return;
+            muav.phase = 'launching'; muav.x = GX + .015; muav.y = GY - .05;
+            document.getElementById('btnLM').disabled = true;
+            document.getElementById('btnBT').disabled = false;
+            log('msn uav launched', 'info');
+            if (relay.phase !== 'orbiting')
+                setRec('relay uav not active. msn uav will lose link when entering blos zone.', true);
+        }
+
+        function cmdLaunchRelay() {
+            if (relay.phase !== 'ground' && !relayFailed) return;
+            relayFailed = false;
+            relay.phase = 'climbing'; relay.x = GX; relay.y = GY - .03;
+            document.getElementById('btnLR').disabled = true;
+            log('relay uav launched \u2014 climbing to orbit alt', 'info');
+        }
+
+        function cmdBlockTerrain() {
+            terrainBlock = !terrainBlock;
+            const btn = document.getElementById('btnBT');
+            btn.textContent = terrainBlock ? 'Remove Terrain Block' : 'Simulate Terrain Blocking';
+            btn.className = terrainBlock ? 'btn ba' : 'btn bw';
+            log(terrainBlock ? 'terrain masking active \u2014 blos link disrupted' : 'terrain block removed', terrainBlock ? 'warn' : 'ok');
+            if (terrainBlock && muav.phase === 'blos') triggerLostLink('terrain obstruction');
+        }
+
+        function cmdRelayFail() {
+            if (relay.phase === 'failed') {
+                relayFailed = false; relay.phase = 'orbiting';
+                document.getElementById('btnRF').textContent = 'Simulate Relay Failure';
+                log('relay uav reinstated \u2014 datalink restored', 'ok');
+                if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
+                    // relay back while msn is on lost link route
+                   
+                   
+                    timerRunning = false;
+                    document.getElementById('timerWrap').classList.add('hidden');
+                    document.getElementById('decPanel').classList.remove('hidden');
+                    setRec('relay datalink restored. uav continuing lost link route. select action to override.', false);
+                } else setRec('relay datalink restored. msn uav datalink reacquired.', false);
+                return;
+            }
+            if (relay.phase !== 'orbiting') return;
+            relay.phase = 'failed'; relayFailed = true;
+            document.getElementById('btnRF').textContent = 'Reinstate Relay UAV';
+            log('relay uav failed \u2014 datalink lost', 'fail');
+            setRec('relay failure detected. reinstate relay uav to restore datalink.', true);
+            if (muav.phase !== 'ground' && muav.phase !== 'launching')
+                setTimeout(() => triggerLostLink('relay failure'), 350);
+        }
+
+        function cmdOrbit() {
+            muav.phase = 'orbit_los'; muav.orbitA = 0;
+            muav._orbitCX = muav.x; muav._orbitCY = muav.y;
+            reacquired = false;
+            // keep decPanel visible — operator can switch to resume mission anytime
             setRec('', false);
-          }
-        }
-      }
-
-      if (muav.phase === 'blos') {
-        const el = effectiveLink();
-        if (el > 0.02) {
-          muav.x += .0010;
-          if (muav.x >= MIS_X) {
-            muav.phase = 'orbiting'; muav.orbitA = 0;
-            log('Mission UAV reached mission area — orbit commenced', 'ok');
-          }
-        } else {
-          triggerLostLink(relayFailed ? 'Relay failure' : terrainBlock ? 'Terrain obstruction' : 'Link range exceeded');
-        }
-      }
-
-      if (muav.phase === 'orbiting') {
-        muav.orbitA += .018;
-        muav.x = MIS_X + .055 * Math.cos(muav.orbitA);
-        muav.y = M_ALT + .030 * Math.sin(muav.orbitA);
-        if (effectiveLink() <= 0.02 && relay.phase === 'orbiting') {
-          triggerLostLink('Relay link lost at mission area');
-        } else if (effectiveLink() <= 0.02 && relay.phase !== 'orbiting') {
-          triggerLostLink('No relay — link lost at mission area');
-        }
-      }
-
-      if (muav.phase === 'resuming') {
-        muav.x += .0010;
-
-        if (muav.x < BLOS_X) return;
-
-        const el = effectiveLink();
-
-        if (el > 0.02) {
-          muav.phase = 'blos';
-          log('Resuming BLOS operations — relay C2 active', 'ok');
-        } else {
-          triggerLostLink('Re-entered BLOS without relay coverage');
-        }
-      }
-
-      // Lost link timer
-      if (timerRunning && muav.phase === 'lostlink') {
-        lostLinkTimer -= 1 / 60;
-        const pct = Math.max(0, lostLinkTimer / TIMER_MAX);
-        document.getElementById('timerVal').textContent = Math.ceil(Math.max(0, lostLinkTimer)) + 's';
-        document.getElementById('timerBar').style.width = (pct * 100) + '%';
-        document.getElementById('timerBar').style.background = pct > 0.5 ? 'var(--red)' : pct > 0.25 ? 'var(--yellow)' : '#8a2020';
-        if (effectiveLink() > 0.02) {
-          // Relay launched and link restoring while in lostlink phase
-          muav.phase = 'reacq';
-          timerRunning = false;
-          document.getElementById('timerWrap').style.display = 'none';
-          log('Link recovering via relay during timer — transitioning to reacquisition', 'warn');
-        } else if (lostLinkTimer <= 0) {
-          timerRunning = false;
-          document.getElementById('timerWrap').style.display = 'none';
-          log('Lost link timer expired — executing autonomous lost link procedure', 'warn');
-          setRec('Lost link timer expired. Mission UAV returning to reacquisition waypoint.', true);
-        }
-      }
-
-      // Flying toward reacq WP
-      if (muav.phase === 'lostlink' && lostLinkTimer <= 0 && !timerRunning) {
-        const dx = REACQ_X - muav.x, dy = REACQ_Y - muav.y;
-        const d = Math.hypot(dx, dy);
-        if (d > 0.012) {
-          muav.x += dx / d * .0011; muav.y += dy / d * .0011;
-        } else {
-          muav.phase = 'reacq';
-          log('Mission UAV reached reacquisition waypoint — awaiting link recovery', 'warn');
-        }
-      }
-
-      if (muav.phase === 'reacq') {
-
-        const dl = calcDirectLink();
-        const ml = calcMissionViaRelay();
-        const el = Math.max(dl, ml);
-
-        if (el > 0.05 && !reacquired) {
-          reacquired = true;
-          log('LINK REACQUIRED — awaiting operator decision', 'ok');
-          document.getElementById('decPanel').style.display = 'block';
-          setRec('Link reacquired. Choose: Orbit Within LOS or Resume Mission.', false);
+            log('operator decision: orbit and hold position', 'ok');
         }
 
-        if (!reacquired) {
-
-          const dx = REACQ_X - muav.x;
-          const dy = REACQ_Y - muav.y;
-          const d = Math.hypot(dx, dy);
-
-          if (d > 0.015) {
-            muav.x += dx / d * .0006;
-            muav.y += dy / d * .0006;
-          }
+        function cmdResume() {
+            muav.phase = 'resuming'; reacquired = false;
+            // keep decPanel visible — operator can switch back to orbit anytime
+            setRec('', false);
+            log('operator decision: resume msn', 'ok');
+            if (relay.phase !== 'orbiting')
+                setRec('warning: relay uav not active. msn uav will lose link re-entering blos.', true);
         }
-      }
 
-      // Smooth link displays
-      const rawRL = calcRelayLink();
-      const rawML = calcMissionViaRelay();
-      const rawDL = calcDirectLink();
-      const spd = 0.015;
-      rLinkDisp += (rawRL - rLinkDisp) * spd; rLinkDisp = Math.max(0, Math.min(1, rLinkDisp));
-      mLinkDisp += (rawML - mLinkDisp) * spd; mLinkDisp = Math.max(0, Math.min(1, mLinkDisp));
-      dLinkDisp += (rawDL - dLinkDisp) * spd; dLinkDisp = Math.max(0, Math.min(1, dLinkDisp));
-    }
+        function cmdReset() {
+            relay = { phase: 'ground', x: GX, y: GY - .02, orbit: 0 };
+            muav = { phase: 'ground', x: GX + .01, y: GY - .01, orbitA: 0 };
+            terrainBlock = false; relayFailed = false; reacquired = false;
+            lostLinkTimer = 0; timerRunning = false;
+            rLinkDisp = 0; mLinkDisp = 0; dLinkDisp = 0; frame = 0;
+            logLines = []; document.getElementById('logBox').innerHTML = '';
+            document.getElementById('decPanel').classList.add('hidden');
+            document.getElementById('timerWrap').classList.add('hidden');
+            document.getElementById('btnLM').disabled = false;
+            document.getElementById('btnLR').disabled = false;
+            document.getElementById('btnBT').disabled = true;
+            document.getElementById('btnBT').textContent = 'Simulate Terrain Blocking';
+            document.getElementById('btnBT').className = 'btn bw';
+            document.getElementById('btnRF').disabled = true;
+            document.getElementById('btnRF').textContent = 'Simulate Relay Failure';
+            setRec('', false);
+            log('sim reset', 'info');
+        }
 
-    function updateUI() {
-      function setBars(id, s) {
-        const bars = document.querySelectorAll(`#${id} .sig-bar`);
-        const cls = s >= 0.65 ? 'lit-green' : s >= 0.25 ? 'lit-yellow' : 'lit-red';
-        const thresholds = [0.08, .3, .6, .85];
-        bars.forEach((b, i) => {
-          b.className = `sig-bar b${i + 1}${s >= thresholds[i] ? ' ' + cls : ''}`;
-        });
-      }
-      setBars('sigR', relay.phase === 'orbiting' ? rLinkDisp : 0);
-      setBars('sigM', mLinkDisp);
-      setBars('sigD', dLinkDisp);
+        function loop() {
+            ctx.clearRect(0, 0, W, H);
+            drawBg(); drawTerrain(); drawLinks(); drawGCS();
+            drawOrbitPaths(); drawRelayUAV(); drawMissionUAV();
+            drawRangeBar(); drawHUDText();
+            updateLogic(); updateUI();
+            frame++;
+            requestAnimationFrame(loop);
+        }
 
-      function linkLbl(id, v) {
-        const e = document.getElementById(id);
-        if (v <= 0.02) { e.textContent = 'NO LINK'; e.className = 'status-val red'; }
-        else if (v < .35) { e.textContent = 'WEAK'; e.className = 'status-val red'; }
-        else if (v < .65) { e.textContent = 'DEGRADED'; e.className = 'status-val yellow'; }
-        else { e.textContent = 'STRONG'; e.className = 'status-val green'; }
-      }
-      linkLbl('lblRL', relay.phase === 'orbiting' ? rLinkDisp : 0);
-      linkLbl('lblML', mLinkDisp);
-      linkLbl('lblDL', dLinkDisp);
-
-      const el = effectiveLink();
-      const modeEl = document.getElementById('lblMode');
-      if (muav.phase === 'lostlink') { modeEl.textContent = 'LOST LINK'; modeEl.className = 'status-val red'; }
-      else if (mLinkDisp > 0.02 && dLinkDisp > 0.02) { modeEl.textContent = 'DIRECT+RELAY'; modeEl.className = 'status-val green'; }
-      else if (mLinkDisp > 0.02) { modeEl.textContent = 'RELAY C2'; modeEl.className = 'status-val blue'; }
-      else if (dLinkDisp > 0.02) { modeEl.textContent = 'DIRECT'; modeEl.className = 'status-val green'; }
-      else { modeEl.textContent = '--'; modeEl.className = 'status-val dim'; }
-
-      const rPhMap = { ground: 'GROUND', climbing: 'CLIMBING', orbiting: 'ON STATION', failed: 'FAILED' };
-      const mPhMap = { ground: 'GROUND', launching: 'LAUNCHING', flying: 'LOS / DIRECT', blos: 'BLOS / RELAY C2', lostlink: 'LOST LINK PROCEDURE', reacq: 'REACQ WAYPOINT', orbiting: 'MISSION ORBIT', resuming: 'RESUMING MISSION' };
-      const rpEl = document.getElementById('lblRph');
-      rpEl.textContent = rPhMap[relay.phase] || relay.phase.toUpperCase();
-      rpEl.className = `status-val ${relay.phase === 'failed' ? 'red' : relay.phase === 'orbiting' ? 'green' : 'dim'}`;
-      const mpEl = document.getElementById('lblMph');
-      mpEl.textContent = mPhMap[muav.phase] || muav.phase.toUpperCase();
-      mpEl.className = `status-val ${muav.phase === 'lostlink' ? 'red' : ['blos', 'orbiting', 'resuming'].includes(muav.phase) ? 'green' : muav.phase === 'reacq' ? 'yellow' : 'dim'}`;
-
-      // Geometry
-      const rp = getRelayPos();
-      const rAlt = relay.phase !== 'ground' ? Math.round((1 - rp.y) * 3000 + 600) + 'ft' : '--';
-      const mAlt = muav.phase !== 'ground' ? Math.round((1 - muav.y) * 2500 + 500) + 'ft' : '--';
-      const horizon = relay.phase !== 'ground' ? Math.round(Math.sqrt(2 * 6371 * ((parseInt(rAlt) || 5000) / 3.281 / 1000)) * 1.05) + ' km' : '--';
-      const gcsRelay = relay.phase !== 'ground' ? (Math.hypot(rp.x - GX, rp.y - GY) * 180).toFixed(1) + ' km' : '--';
-      const relMis = relay.phase !== 'ground' && muav.phase !== 'ground' ? (Math.hypot(muav.x - rp.x, muav.y - rp.y) * 180).toFixed(1) + ' km' : '--';
-      document.getElementById('gRA').textContent = rAlt;
-      document.getElementById('gMA').textContent = mAlt;
-      document.getElementById('gRH').textContent = horizon;
-      document.getElementById('gGR').textContent = gcsRelay;
-      document.getElementById('gRM').textContent = relMis;
-      const tbEl = document.getElementById('gTB');
-      tbEl.textContent = terrainBlock ? 'TRUE' : 'FALSE'; tbEl.className = `geo-val ${terrainBlock ? 't' : 'f'}`;
-      const lmg = document.getElementById('gLM');
-      if (muav.phase === 'lostlink') { lmg.textContent = 'LOST LINK'; }
-      else if (mLinkDisp > 0.02 && dLinkDisp > 0.02) { lmg.textContent = 'DIRECT + RELAY'; }
-      else if (mLinkDisp > 0.02) { lmg.textContent = 'RELAY ONLY'; }
-      else if (dLinkDisp > 0.02) { lmg.textContent = 'DIRECT ONLY'; }
-      else lmg.textContent = '--';
-
-      // Phase badge
-      const pb = document.getElementById('pBadge'), pd = document.getElementById('pDesc');
-      const phases = {
-        ground_none: ['STANDBY', '', 'System ready. Launch Mission UAV or Relay UAV to begin.'],
-        climbing: ['RELAY UP', 'active', 'Relay UAV climbing to orbit altitude. C2 link path establishing.'],
-        relay_ready: ['RELAY ON STATION', 'active', 'Relay UAV orbiting. Mission UAV may launch — relay C2 coverage ready.'],
-        flying: ['LOS OPS', 'active', 'Mission UAV in LOS zone. Direct link active.'],
-        blos: ['BLOS OPS', 'active', 'Mission UAV operating beyond LOS. Relay UAV maintaining C2 link.'],
-        lostlink: ['LOST LINK', 'fail', 'Lost link procedure active. UAV returning to reacquisition waypoint.'],
-        reacq: ['REACQ', 'warn', reacquired ? 'Link reacquired. Select orbit or resume mission.' : 'Mission UAV at reacquisition waypoint. Awaiting link recovery.'],
-        orbit_m: ['MISSION ORBIT', 'active', 'Mission UAV orbiting mission area. BLOS operations sustained via relay.'],
-        resuming: ['RESUMING', 'active', 'Mission UAV returning to mission area.'],
-      };
-      let key = 'ground_none';
-      if (relay.phase === 'climbing') key = 'climbing';
-      else if (relay.phase === 'orbiting' && muav.phase === 'ground') key = 'relay_ready';
-      else if (muav.phase === 'flying') key = 'flying';
-      else if (muav.phase === 'blos') key = 'blos';
-      else if (muav.phase === 'lostlink') key = 'lostlink';
-      else if (muav.phase === 'reacq') key = 'reacq';
-      else if (muav.phase === 'orbiting') key = 'orbit_m';
-      else if (muav.phase === 'resuming') key = 'resuming';
-      const p = phases[key] || phases.ground_none;
-      pb.textContent = p[0]; pb.className = `phase-badge ${p[1]}`;
-      pd.textContent = p[2];
-    }
-
-    function cmdLaunchMission() {
-      if (muav.phase !== 'ground') return;
-      muav.phase = 'launching'; muav.x = GX + .015; muav.y = GY - .05;
-      document.getElementById('btnLM').disabled = true;
-      document.getElementById('btnBT').disabled = false;
-      log('Mission UAV launched', 'info');
-      if (relay.phase !== 'orbiting')
-        setRec('Relay UAV not active. Mission UAV will lose link when entering BLOS zone.', true);
-    }
-
-    function cmdLaunchRelay() {
-      if (relay.phase !== 'ground') return;
-      relay.phase = 'climbing'; relay.x = GX; relay.y = GY - .03;
-      document.getElementById('btnLR').disabled = true;
-      log('Relay UAV launched — climbing to orbit altitude', 'info');
-    }
-
-    function cmdBlockTerrain() {
-      terrainBlock = !terrainBlock;
-      const btn = document.getElementById('btnBT');
-      btn.textContent = terrainBlock ? 'Remove Terrain Block' : 'Simulate Terrain Blocking';
-      btn.className = terrainBlock ? 'btn ba' : 'btn bw';
-      log(terrainBlock ? 'Terrain blocking active — BLOS link disrupted' : 'Terrain block removed', terrainBlock ? 'warn' : 'ok');
-      if (terrainBlock && muav.phase === 'blos') triggerLostLink('Terrain obstruction');
-    }
-
-    function cmdRelayFail() {
-      if (relay.phase !== 'orbiting') return;
-      relay.phase = 'failed'; relayFailed = true;
-      document.getElementById('btnRF').disabled = true;
-      log('RELAY UAV FAILED — C2 link lost', 'fail');
-      setRec('Relay failure detected. Mission UAV will lose command link.', true);
-      if (muav.phase === 'blos' || muav.phase === 'orbiting')
-        setTimeout(() => triggerLostLink('Relay failure'), 350);
-    }
-
-    function cmdOrbit() {
-      muav.phase = 'orbiting'; muav.orbitA = 0;
-      muav.x = REACQ_X + .01; muav.y = REACQ_Y;
-      reacquired = false;
-      document.getElementById('decPanel').style.display = 'none';
-      setRec('', false);
-      log('Operator decision: orbit within LOS', 'ok');
-    }
-
-    function cmdResume() {
-      muav.phase = 'resuming'; reacquired = false;
-      document.getElementById('decPanel').style.display = 'none';
-      setRec('', false);
-      log('Operator decision: resume mission', 'ok');
-      if (relay.phase !== 'orbiting')
-        setRec('Warning: Relay UAV not active. Mission UAV will lose link again when entering BLOS.', true);
-    }
-
-    function cmdReset() {
-      relay = { phase: 'ground', x: GX, y: GY - .02, orbit: 0 };
-      muav = { phase: 'ground', x: GX + .01, y: GY - .01, orbitA: 0 };
-      terrainBlock = false; relayFailed = false; reacquired = false;
-      lostLinkTimer = 0; timerRunning = false;
-      rLinkDisp = 0; mLinkDisp = 0; dLinkDisp = 0; frame = 0;
-      logLines = []; document.getElementById('logBox').innerHTML = '';
-      document.getElementById('decPanel').style.display = 'none';
-      document.getElementById('timerWrap').style.display = 'none';
-      document.getElementById('btnLM').disabled = false;
-      document.getElementById('btnLR').disabled = false;
-      document.getElementById('btnBT').disabled = true;
-      document.getElementById('btnBT').textContent = 'Simulate Terrain Blocking';
-      document.getElementById('btnBT').className = 'btn bw';
-      document.getElementById('btnRF').disabled = true;
-      setRec('', false);
-      log('Simulation reset', 'info');
-    }
-
-    function loop() {
-      ctx.clearRect(0, 0, W, H);
-      drawBg(); drawTerrain(); drawLinks(); drawGCS();
-      drawMissionOrbitPath(); drawRelayUAV(); drawMissionUAV();
-      drawRangeBar(); drawHUDText();
-      updateLogic(); updateUI();
-      frame++;
-      requestAnimationFrame(loop);
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-    log('Simulation initialized', 'info');
-    loop();
-  </script>
+        window.addEventListener('resize', resize);
+        resize();
+        log('sim initialized', 'info');
+        loop();
+    </script>
 </body>
 
 </html>
