@@ -1,4 +1,4 @@
-# UAV Airborne Relay Simulator
+# UAV Airborne Relay Simulation
 
 This project is a small interactive visualization demonstrating how
 airborne relay UAVs can extend command-and-control beyond terrain-limited
