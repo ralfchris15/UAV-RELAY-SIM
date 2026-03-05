@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UAV Airborne Relay Simulation — BLOS Relay Architecture</title>
+    <title>UAV Airborne Relay Simulation</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -504,7 +504,7 @@
                             Failure</button>
                         <button class="btn" onclick="cmdReset()">Reset Simulation</button>
                         <div class="decision-panel hidden" id="decPanel">
-                            <div class="decision-title">Link Reacquired &#8212; Operator Decision</div>
+                            <div class="decision-title">Link Reacquired &#8212; Remote Pilot Decision</div>
                             <button class="btn ba" onclick="cmdOrbit()">Orbit &amp; Hold Position</button>
                             <button class="btn bp" onclick="cmdResume()">Resume Mission</button>
                         </div>
@@ -745,42 +745,72 @@
             const gx = px(GX) + 8, gy = py(GY) - 28;
             const rx = px(rp.x), ry = py(rp.y);
             const mx = px(muav.x), my = py(muav.y);
-            if (relay.phase !== 'ground') {
-                const rl = rLinkDisp;
-                if (rl > 0.02) {
-                    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(rx, ry);
-                    ctx.strokeStyle = linkColor(rl); ctx.globalAlpha = 0.5 + rl * .35;
-                    ctx.setLineDash([6, 4]); ctx.lineDashOffset = dashOff; ctx.lineWidth = 1.5 + rl * .8; ctx.stroke();
-                    ctx.setLineDash([]); ctx.globalAlpha = 1;
-                    const t = (frame * .016) % 1;
-                    ctx.beginPath(); ctx.arc(gx + (rx - gx) * t, gy + (ry - gy) * t, 2.5, 0, Math.PI * 2);
-                    ctx.fillStyle = linkColor(rl); ctx.fill();
-                    ctx.fillStyle = linkColor(rl); ctx.globalAlpha = .6;
-                    ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-                    ctx.fillText('C2 UPLINK', (gx + rx) / 2 - 8, (gy + ry) / 2 - 8); ctx.globalAlpha = 1;
+            const fsize = Math.max(7, W * .008);
+
+            // helper: draw offset uplink + downlink pair between two points
+            function drawDualLink(ax, ay, bx, by, str, uplinkLabel, offset) {
+                if (str <= 0.02) return;
+                const dx = bx - ax, dy = by - ay;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const nx = -dy / len * offset, ny = dx / len * offset; // perpendicular offset
+
+                const col = linkColor(str);
+                const alpha = 0.5 + str * .35;
+                const lw = 1.2 + str * .6;
+
+                // uplink line (a→b), offset one side
+                ctx.beginPath();
+                ctx.moveTo(ax + nx, ay + ny); ctx.lineTo(bx + nx, by + ny);
+                ctx.strokeStyle = col; ctx.globalAlpha = alpha;
+                ctx.setLineDash([6, 4]); ctx.lineDashOffset = dashOff; ctx.lineWidth = lw; ctx.stroke();
+                // uplink moving dot a→b
+                const t = (frame * .016) % 1;
+                ctx.beginPath(); ctx.arc(bx + nx - dx * t, by + ny - dy * t, 2.2, 0, Math.PI * 2);
+                ctx.fillStyle = col; ctx.globalAlpha = alpha; ctx.fill();
+
+                // downlink line (b→a), offset other side
+                ctx.beginPath();
+                ctx.moveTo(ax - nx, ay - ny); ctx.lineTo(bx - nx, by - ny);
+                ctx.strokeStyle = col; ctx.globalAlpha = alpha * .75;
+                ctx.setLineDash([4, 6]); ctx.lineDashOffset = -dashOff; ctx.lineWidth = lw * .85; ctx.stroke();
+                // downlink moving dot b→a
+                const t2 = (frame * .016 + .5) % 1;
+                ctx.beginPath(); ctx.arc(ax - nx + dx * t2, ay - ny + dy * t2, 2.2, 0, Math.PI * 2);
+                ctx.fillStyle = col; ctx.globalAlpha = alpha * .75; ctx.fill();
+
+                ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+                // labels
+                if (uplinkLabel) {
+                    const mx2 = (ax + bx) / 2, my2 = (ay + by) / 2;
+                    const angle = Math.atan2(dy, dx);
+                    ctx.save();
+                    ctx.translate(mx2, my2); ctx.rotate(angle);
+                    ctx.font = `${fsize}px 'JetBrains Mono'`; ctx.textAlign = 'center';
+                    ctx.fillStyle = col; ctx.globalAlpha = .6;
+                    ctx.fillText('► UPLINK', -0, -offset - 3);
+                    ctx.fillText('◄ DOWNLINK', -0, offset + fsize + 1);
+                    ctx.restore(); ctx.globalAlpha = 1;
                 }
             }
-            const ml = mLinkDisp;
+
+            // GCS ↔ Relay UAV
+            if (relay.phase !== 'ground') {
+                drawDualLink(gx, gy, rx, ry, rLinkDisp, 'C2 UPLINK', 7);
+            }
+
+            // Relay UAV ↔ Mission UAV
             const mActive = ['flying', 'blos', 'orbiting', 'orbit_los', 'resuming', 'reacq'].includes(muav.phase);
-            if (mActive && ml > 0.02 && relay.phase === 'orbiting' && !relayFailed) {
-                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(mx, my);
-                ctx.strokeStyle = linkColor(ml); ctx.globalAlpha = 0.5 + ml * .35;
-                ctx.setLineDash([6, 4]); ctx.lineDashOffset = -dashOff; ctx.lineWidth = 1.5 + ml * .8; ctx.stroke();
-                ctx.setLineDash([]); ctx.globalAlpha = 1;
-                const t2 = (frame * .016 + .5) % 1;
-                ctx.beginPath(); ctx.arc(rx + (mx - rx) * t2, ry + (my - ry) * t2, 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = linkColor(ml); ctx.fill();
-                ctx.fillStyle = linkColor(ml); ctx.globalAlpha = .6;
-                ctx.font = `${Math.max(7, W * .008)}px 'JetBrains Mono'`; ctx.textAlign = 'center';
-                ctx.fillText('RELAY DATALINK', (rx + mx) / 2 + 8, (ry + my) / 2 - 8); ctx.globalAlpha = 1;
+            if (mActive && relay.phase === 'orbiting' && !relayFailed) {
+                drawDualLink(rx, ry, mx, my, mLinkDisp, 'RELAY DATALINK', 7);
             }
-            const dl = dLinkDisp;
-            if (mActive && dl > 0.02) {
-                ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(mx, my);
-                ctx.strokeStyle = linkColor(dl); ctx.globalAlpha = 0.28 + dl * .18;
-                ctx.setLineDash([3, 7]); ctx.lineDashOffset = dashOff * .5; ctx.lineWidth = 1; ctx.stroke();
-                ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+            // Direct GCS ↔ Mission UAV 
+            if (mActive && dLinkDisp > 0.02) {
+                drawDualLink(gx, gy, mx, my, dLinkDisp, 'DIRECT C2 LINK', 7);
             }
+
+            // lost link route
             if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
                 const wx = px(REACQ_X), wy = py(REACQ_Y);
                 ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(wx, wy);
@@ -1116,7 +1146,7 @@
             mpEl.textContent = mPhMap[muav.phase] || muav.phase.toUpperCase();
             mpEl.className = `status-val ${muav.phase === 'lostlink' ? 'red' : ['blos', 'orbiting', 'orbit_los', 'resuming'].includes(muav.phase) ? 'green' : muav.phase === 'reacq' ? 'yellow' : 'dim'}`;
 
-            // link geometry — alt calcs units changed to NM
+            // link geometry — alt calcs same as original, units changed to NM
             const rp = getRelayPos();
             const rAlt = relay.phase !== 'ground' ? '7000ft' : '--';
             const mAlt = muav.phase !== 'ground' ? '5000ft' : '--';
@@ -1198,8 +1228,8 @@
                 log('relay uav reinstated \u2014 datalink restored', 'ok');
                 if (muav.phase === 'lostlink' || muav.phase === 'reacq') {
                     // relay back while msn is on lost link route
-                   
-                   
+                    // DON'T freeze uav or change phase — let it keep flying the route
+                    // just show decision panel so pilot can choose to override or let it continue
                     timerRunning = false;
                     document.getElementById('timerWrap').classList.add('hidden');
                     document.getElementById('decPanel').classList.remove('hidden');
@@ -1220,16 +1250,16 @@
             muav.phase = 'orbit_los'; muav.orbitA = 0;
             muav._orbitCX = muav.x; muav._orbitCY = muav.y;
             reacquired = false;
-            // keep decPanel visible — operator can switch to resume mission anytime
+            // keep decPanel visible — rp can switch to resume mission anytime
             setRec('', false);
-            log('operator decision: orbit and hold position', 'ok');
+            log('remote pilot decision: orbit and hold position', 'ok');
         }
 
         function cmdResume() {
             muav.phase = 'resuming'; reacquired = false;
-            // keep decPanel visible — operator can switch back to orbit anytime
+            // keep decPanel visible — rp can switch back to orbit anytime
             setRec('', false);
-            log('operator decision: resume msn', 'ok');
+            log('remote pilot decision: resume msn', 'ok');
             if (relay.phase !== 'orbiting')
                 setRec('warning: relay uav not active. msn uav will lose link re-entering blos.', true);
         }
